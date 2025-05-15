@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 
 const register = async (username, email, password) => {
   if (!username || !email) {
-    throw new Error("Username and email are required");
+    throw { status: 400, message: "Username and email are required" };
   }
 
   const existingUser = await User.findOne({
@@ -12,7 +12,7 @@ const register = async (username, email, password) => {
       [Op.or]: [{ username }, { email }],
     },
   });
-  if (existingUser) throw new Error("User already exist");
+  if (existingUser) throw { status: 409, message: "User already exist" };
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await User.create({ username, email, password: hashedPassword });
@@ -25,7 +25,16 @@ const login = async (email, password) => {
     throw new Error("Invalid email or password");
   }
 
-  return { message: "Login successful", token };
+  return { message: "Login successful" };
 };
 
-module.exports = { register, login };
+const getProfile = async (id) => {
+  const user = await User.findByPk(id);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return { user };
+};
+
+module.exports = { register, login, getProfile };
