@@ -185,18 +185,12 @@ router.post("/logout", authMiddleware, async (req, res) => {
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/users:
  *   get:
  *     summary: Load a user profile
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
  *     responses:
  *       200:
  *         description: The user with following id
@@ -209,10 +203,9 @@ router.post("/logout", authMiddleware, async (req, res) => {
  *       404:
  *         description: User not found
  */
-router.get("/:id", authMiddleware, async (req, res) => {
-  const id = req.params.id;
+router.get("/", authMiddleware, async (req, res) => {
   try {
-    const result = await authServices.getProfile(id);
+    const result = await authServices.getProfile(req.user.userId);
     res.json(result);
   } catch (error) {
     res.status(404).json({ message: error.message });

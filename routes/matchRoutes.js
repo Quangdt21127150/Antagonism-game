@@ -67,13 +67,8 @@ const authMiddleware = require("../middleware/authMiddleware");
  */
 router.post("/", authMiddleware, async (req, res) => {
   const { matchId, content } = req.body;
-  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await matchServices.saveMatchHistory(
-      matchId,
-      content,
-      accessToken
-    );
+    const result = await matchServices.saveMatchHistory(matchId, content);
     res.status(201).json(result);
   } catch (error) {
     res.status(error.status || 404).json({ message: error.message });
@@ -101,9 +96,8 @@ router.post("/", authMiddleware, async (req, res) => {
  *         description: Unauthorized
  */
 router.get("/", authMiddleware, async (req, res) => {
-  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await matchServices.getMatches(accessToken);
+    const result = await matchServices.getMatches(req.user.userId);
     res.status(200).json(result);
   } catch (error) {
     res.status(error.status || 404).json({ message: error.message });
@@ -139,9 +133,8 @@ router.get("/", authMiddleware, async (req, res) => {
  */
 router.get("/:matchId", authMiddleware, async (req, res) => {
   const matchId = req.params.matchId;
-  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await matchServices.getMatchHistory(matchId, accessToken);
+    const result = await matchServices.getMatchHistory(matchId);
     res.status(200).json(result);
   } catch (error) {
     res.status(error.status || 404).json({ message: error.message });

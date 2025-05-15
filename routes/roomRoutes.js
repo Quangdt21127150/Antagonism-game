@@ -61,9 +61,8 @@ const authMiddleware = require("../middleware/authMiddleware");
  */
 router.post("/", authMiddleware, async (req, res) => {
   const { password } = req.body;
-  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await roomServices.createRoom(accessToken, password);
+    const result = await roomServices.createRoom(password, req.user.userId);
     res.status(201).json(result);
   } catch (error) {
     res.status(error.status || 404).json({ message: error.message });
@@ -109,9 +108,12 @@ router.post("/", authMiddleware, async (req, res) => {
 router.post("/:id", authMiddleware, async (req, res) => {
   const { password } = req.body;
   const roomId = req.params.id;
-  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await roomServices.joinRoom(roomId, password, accessToken);
+    const result = await roomServices.joinRoom(
+      roomId,
+      password,
+      req.user.userId
+    );
     res.json(result);
   } catch (error) {
     res.status(error.status || 400).json({ message: error.message });
@@ -139,9 +141,8 @@ router.post("/:id", authMiddleware, async (req, res) => {
  *         description: Unauthorized
  */
 router.get("/all", authMiddleware, async (req, res) => {
-  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await roomServices.getRooms(accessToken);
+    const result = await roomServices.getRooms(req.user.userId);
     res.json(result);
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message });
@@ -169,9 +170,8 @@ router.get("/all", authMiddleware, async (req, res) => {
  *         description: Unauthorized
  */
 router.get("/", authMiddleware, async (req, res) => {
-  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await roomServices.getWaitingRooms(accessToken);
+    const result = await roomServices.getWaitingRooms();
     res.json(result);
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message });
