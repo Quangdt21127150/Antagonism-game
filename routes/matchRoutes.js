@@ -22,6 +22,8 @@ const matchServices = require("../services/matchServices");
  *     responses:
  *       201:
  *         description: Save match history successfully
+ *       404:
+ *         description: Match not found to save history
  */
 router.post("/", async (req, res) => {
   const { matchId, content } = req.body;
@@ -29,7 +31,7 @@ router.post("/", async (req, res) => {
     const result = await matchServices.saveMatchHistory(matchId, content);
     res.status(201).json(result);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(404).json({ message: error.message });
   }
 });
 
@@ -51,15 +53,17 @@ router.post("/", async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: array
+ *               type: object
  *               items:
  *                 $ref: '#/components/schemas/Match'
+ *       404:
+ *         description: No match found
  */
 router.get("/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
   try {
     const result = await matchServices.getMatchHistory(matchId);
-    res.json(result);
+    res.status(200).json(result);
   } catch (error) {
     res.status(404).json({ message: error.message });
   }
