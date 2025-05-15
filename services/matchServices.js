@@ -1,7 +1,17 @@
+const { Op } = require("sequelize");
 const Match = require("../models/Match");
 const MatchHistory = require("../models/MatchHistory");
+const jwt = require("jsonwebtoken");
 
-const saveMatchHistory = async (matchId, content) => {
+const saveMatchHistory = async (matchId, content, accessToken) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+    userId = decoded.userId;
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
+
   const match = await Match.findByPk(matchId);
   if (!match) throw new Error("Match not found to save history");
 
@@ -9,7 +19,31 @@ const saveMatchHistory = async (matchId, content) => {
   return { message: "Match history saved successfully" };
 };
 
-const getMatchHistory = async (matchId) => {
+const getMatches = async (accessToken) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+    userId = decoded.userId;
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
+
+  const matches = await Match.findAll({
+    where: { [Op.or]: [{ white_id: userId }, { black_id: userId }] },
+  });
+
+  return { matches };
+};
+
+const getMatchHistory = async (matchId, accessToken) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+    userId = decoded.userId;
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
+
   const match = await Match.findOne({
     where: { id: matchId },
   });
@@ -20,11 +54,11 @@ const getMatchHistory = async (matchId) => {
   if (!match || !history) throw new Error("No match found");
 
   const matchHistory = {
-    ...match,
+    ...match.dataValues,
     content: history.content,
   };
 
   return { matchHistory };
 };
 
-module.exports = { saveMatchHistory, getMatchHistory };
+module.exports = { saveMatchHistory, getMatches, getMatchHistory };

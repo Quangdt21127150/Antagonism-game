@@ -1,19 +1,32 @@
 const Room = require("../models/Room");
 const Match = require("../models/Match");
-const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 
-const createRoom = async (ownerId, password) => {
-  const owner = await User.findByPk(ownerId);
-  if (!owner) throw new Error("Owner of room not found");
+const createRoom = async (accessToken, password) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+    userId = decoded.userId;
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
 
   const room = await Room.create({
-    owner_id: ownerId,
-    password: password || null,
+    owner_id: userId,
+    password: password,
   });
   return { message: "Room created successfully", roomId: room.id };
 };
 
-const joinRoom = async (roomId, password, userId) => {
+const joinRoom = async (roomId, password, accessToken) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+    userId = decoded.userId;
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
+
   const room = await Room.findByPk(roomId);
   if (!room) throw { status: 404, message: "Room not found" };
 
@@ -34,11 +47,33 @@ const joinRoom = async (roomId, password, userId) => {
   return { message: "Joined room successfully", matchId: match.id };
 };
 
-const getWaitingRooms = async () => {
+const getRooms = async (accessToken) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+    userId = decoded.userId;
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
+
+  const rooms = await Room.findAll({
+    where: { owner_id: userId },
+  });
+  return { rooms };
+};
+
+const getWaitingRooms = async (accessToken) => {
+  try {
+    jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
+
   const rooms = await Room.findAll({
     include: [
       {
         model: Match,
+        as: "match",
         where: { status: "waiting" },
         required: true,
       },
@@ -47,4 +82,4 @@ const getWaitingRooms = async () => {
   return { rooms };
 };
 
-module.exports = { createRoom, joinRoom, getWaitingRooms };
+module.exports = { createRoom, joinRoom, getRooms, getWaitingRooms };

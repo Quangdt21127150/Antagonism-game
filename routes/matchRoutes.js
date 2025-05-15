@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const matchServices = require("../services/matchServices");
+const authMiddleware = require("../middleware/authMiddleware");
 
 /**
  * @swagger
@@ -30,6 +31,11 @@ const matchServices = require("../services/matchServices");
  *           type: string
  *           format: date-time
  *           description: The match creation date
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  */
 
 /**
@@ -38,6 +44,8 @@ const matchServices = require("../services/matchServices");
  *   post:
  *     summary: Save match history
  *     tags: [Matches]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -52,16 +60,53 @@ const matchServices = require("../services/matchServices");
  *     responses:
  *       201:
  *         description: Save match history successfully
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Match not found to save history
  */
-router.post("/", async (req, res) => {
+router.post("/", authMiddleware, async (req, res) => {
   const { matchId, content } = req.body;
+  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await matchServices.saveMatchHistory(matchId, content);
+    const result = await matchServices.saveMatchHistory(
+      matchId,
+      content,
+      accessToken
+    );
     res.status(201).json(result);
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(error.status || 404).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/matches:
+ *   get:
+ *     summary: Get matches that user joined
+ *     tags: [Matches]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of matches that user joined
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Match'
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/", authMiddleware, async (req, res) => {
+  const accessToken = req.headers.authorization?.split(" ")[1];
+  try {
+    const result = await matchServices.getMatches(accessToken);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(error.status || 404).json({ message: error.message });
   }
 });
 
@@ -71,12 +116,15 @@ router.post("/", async (req, res) => {
  *   get:
  *     summary: Load a match
  *     tags: [Matches]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: match_id
  *         required: true
  *         schema:
  *           type: string
+ *         description: ID of the room
  *     responses:
  *       200:
  *         description: The match with following id
@@ -84,16 +132,19 @@ router.post("/", async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Match'
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: No match found
  */
-router.get("/:matchId", async (req, res) => {
+router.get("/:matchId", authMiddleware, async (req, res) => {
   const matchId = req.params.matchId;
+  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await matchServices.getMatchHistory(matchId);
+    const result = await matchServices.getMatchHistory(matchId, accessToken);
     res.status(200).json(result);
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(error.status || 404).json({ message: error.message });
   }
 });
 

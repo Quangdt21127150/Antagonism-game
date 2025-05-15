@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const roomServices = require("../services/roomServices");
+const authMiddleware = require("../middleware/authMiddleware");
 
 /**
  * @swagger
@@ -28,6 +29,11 @@ const roomServices = require("../services/roomServices");
  *           type: string
  *           format: date-time
  *           description: The room creation date
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  */
 
 /**
@@ -36,6 +42,8 @@ const roomServices = require("../services/roomServices");
  *   post:
  *     summary: Create a room
  *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -43,23 +51,22 @@ const roomServices = require("../services/roomServices");
  *           schema:
  *             type: object
  *             properties:
- *               owner_id:
- *                 type: string
  *               password:
  *                 type: string
  *     responses:
  *       201:
  *         description: Room created successfully
- *       404:
- *         description: Owner of room not found
+ *       401:
+ *         description: Unauthorized
  */
-router.post("/", async (req, res) => {
-  const { ownerId, password } = req.body;
+router.post("/", authMiddleware, async (req, res) => {
+  const { password } = req.body;
+  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await roomServices.createRoom(ownerId, password);
+    const result = await roomServices.createRoom(accessToken, password);
     res.status(201).json(result);
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(error.status || 404).json({ message: error.message });
   }
 });
 
@@ -69,30 +76,75 @@ router.post("/", async (req, res) => {
  *   post:
  *     summary: Join a room
  *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: ID of the room
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               password:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Join room successfully
  *       400:
  *         description: Two players must be different
+ *       401:
+ *         description: Unauthorized
  *       403:
  *         description: Incorrect password
  *       404:
  *         description: Room not found
  */
-router.post("/:id", async (req, res) => {
+router.post("/:id", authMiddleware, async (req, res) => {
   const { password } = req.body;
   const roomId = req.params.id;
+  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await roomServices.joinRoom(roomId, password);
+    const result = await roomServices.joinRoom(roomId, password, accessToken);
     res.json(result);
   } catch (error) {
-    res.status(error.status).json({ message: error.message });
+    res.status(error.status || 400).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/rooms/all:
+ *   get:
+ *     summary: Get all rooms belonging to user
+ *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of all rooms belonging to user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Room'
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/all", authMiddleware, async (req, res) => {
+  const accessToken = req.headers.authorization?.split(" ")[1];
+  try {
+    const result = await roomServices.getRooms(accessToken);
+    res.json(result);
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message });
   }
 });
 
@@ -102,6 +154,8 @@ router.post("/:id", async (req, res) => {
  *   get:
  *     summary: Get waiting rooms
  *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: A list of waiting rooms
@@ -111,13 +165,16 @@ router.post("/:id", async (req, res) => {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Room'
+ *       401:
+ *         description: Unauthorized
  */
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
+  const accessToken = req.headers.authorization?.split(" ")[1];
   try {
-    const result = await roomServices.getWaitingRooms();
+    const result = await roomServices.getWaitingRooms(accessToken);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.status || 500).json({ message: error.message });
   }
 });
 

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authServices = require("../services/authServices");
+const authMiddleware = require("../middleware/authMiddleware");
 
 /**
  * @swagger
@@ -33,6 +34,11 @@ const authServices = require("../services/authServices");
  *           type: string
  *           format: date-time
  *           description: The user's updation date
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  */
 
 /**
@@ -68,7 +74,7 @@ router.post("/register", async (req, res) => {
     const result = await authServices.register(username, email, password);
     res.status(201).json(result);
   } catch (error) {
-    res.status(error.status).json({ message: error.message });
+    res.status(error.status || 400).json({ message: error.message });
   }
 });
 
@@ -92,6 +98,17 @@ router.post("/register", async (req, res) => {
  *     responses:
  *       200:
  *         description: User login successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
  *       400:
  *         description: Invalid email or password
  */
@@ -107,10 +124,73 @@ router.post("/login", async (req, res) => {
 
 /**
  * @swagger
+ * /api/users/refresh-token:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Access token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *       403:
+ *         description: Invalid or expired refresh token
+ */
+router.post("/refresh-token", async (req, res) => {
+  const { refreshToken } = req.body;
+  try {
+    const result = await authServices.refreshToken(refreshToken);
+    res.json(result);
+  } catch (error) {
+    res.status(error.status || 403).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.post("/logout", authMiddleware, async (req, res) => {
+  try {
+    const result = await authServices.logout(req.user.userId);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
  * /api/users/{id}:
  *   get:
- *     summary: Load a match
+ *     summary: Load a user profile
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -123,11 +203,13 @@ router.post("/login", async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *              $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: User not found
  */
-router.get("/:id", async (req, res) => {
+router.get("/:id", authMiddleware, async (req, res) => {
   const id = req.params.id;
   try {
     const result = await authServices.getProfile(id);
