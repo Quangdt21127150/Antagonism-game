@@ -4,7 +4,7 @@ const User = require("../models/User");
 
 const createRoom = async (ownerId, password) => {
   const owner = await User.findByPk(ownerId);
-  if (!owner) throw { status: 404, message: "Owner of room not found" };
+  if (!owner) throw new Error("Owner of room not found");
 
   const room = await Room.create({
     owner_id: ownerId,
@@ -25,10 +25,10 @@ const joinRoom = async (roomId, password, userId) => {
   if (!match) {
     match = await Match.create({ white_id: userId, status: "waiting" });
     await room.update({ match_id: match.id });
-  } else if (match.status === "waiting" && !match.black_id) {
+  } else if (match.white_id !== userId) {
     await match.update({ black_id: userId, status: "ongoing" });
   } else {
-    throw new Error("Cannot join this room");
+    throw { status: 400, message: "Two players must be different" };
   }
 
   return { message: "Joined room successfully", matchId: match.id };
