@@ -21,7 +21,6 @@ const Room = sequelize.define(
     },
     match_id: {
       type: DataTypes.UUID,
-      allowNull: false,
       references: {
         model: Match,
         key: "id",

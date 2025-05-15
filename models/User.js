@@ -22,6 +22,10 @@ const User = sequelize.define(
     password: {
       type: DataTypes.STRING,
     },
+    refresh_token: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

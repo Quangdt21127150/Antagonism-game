@@ -35,6 +35,15 @@ const swaggerOptions = {
       description: "API for managing users and friends",
     },
     servers: [{ url: `http://localhost:${PORT}` }],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
   },
   apis: ["./routes/*.js"],
 };

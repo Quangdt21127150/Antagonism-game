@@ -1,20 +1,64 @@
+const { Op } = require("sequelize");
 const Match = require("../models/Match");
 const MatchHistory = require("../models/MatchHistory");
+const jwt = require("jsonwebtoken");
 
-const saveMatchHistory = async (matchId, content) => {
+const saveMatchHistory = async (matchId, content, accessToken) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+    userId = decoded.userId;
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
+
   const match = await Match.findByPk(matchId);
-  if (!match) throw new Error("Match not found");
+  if (!match) throw new Error("Match not found to save history");
 
   await MatchHistory.create({ match_id: matchId, content });
   return { message: "Match history saved successfully" };
 };
 
-const getMatchHistory = async (matchId) => {
-  const match = await Match.findOne({
-    where: { match_id: matchId },
+const getMatches = async (accessToken) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+    userId = decoded.userId;
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
+
+  const matches = await Match.findAll({
+    where: { [Op.or]: [{ white_id: userId }, { black_id: userId }] },
   });
-  if (!match) throw new Error("No match found");
-  return { match };
+
+  return { matches };
 };
 
-module.exports = { saveMatchHistory, getMatchHistory };
+const getMatchHistory = async (matchId, accessToken) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+    userId = decoded.userId;
+  } catch (error) {
+    throw { status: 401, message: "Unauthorized" };
+  }
+
+  const match = await Match.findOne({
+    where: { id: matchId },
+  });
+  const history = await MatchHistory.findOne({
+    where: { match_id: matchId },
+  });
+
+  if (!match || !history) throw new Error("No match found");
+
+  const matchHistory = {
+    ...match.dataValues,
+    content: history.content,
+  };
+
+  return { matchHistory };
+};
+
+module.exports = { saveMatchHistory, getMatches, getMatchHistory };
