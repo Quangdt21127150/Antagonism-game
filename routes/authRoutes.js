@@ -124,7 +124,7 @@ router.post("/login", async (req, res) => {
 
 /**
  * @swagger
- * /api/users/refresh-token:
+ * /api/users/refresh:
  *   post:
  *     summary: Refresh access token
  *     tags: [Users]
@@ -150,7 +150,7 @@ router.post("/login", async (req, res) => {
  *       403:
  *         description: Invalid or expired refresh token
  */
-router.post("/refresh-token", async (req, res) => {
+router.post("/refresh", async (req, res) => {
   const { refreshToken } = req.body;
   try {
     const result = await authServices.refreshToken(refreshToken);
