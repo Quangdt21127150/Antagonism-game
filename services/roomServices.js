@@ -2,8 +2,11 @@ const Room = require("../models/Room");
 const Match = require("../models/Match");
 
 const createRoom = async (password, userId) => {
+  const match = await Match.create({ white_id: userId, status: "waiting" });
+
   const room = await Room.create({
     owner_id: userId,
+    match_id: match.id,
     password: password,
   });
   return { message: "Room created successfully", roomId: room.id };
@@ -18,10 +21,7 @@ const joinRoom = async (roomId, password, userId) => {
   }
 
   let match = await Match.findByPk(room.match_id);
-  if (!match) {
-    match = await Match.create({ white_id: userId, status: "waiting" });
-    await room.update({ match_id: match.id });
-  } else if (match.white_id !== userId) {
+  if (match.white_id !== userId) {
     await match.update({ black_id: userId, status: "ongoing" });
   } else {
     throw { status: 400, message: "Two players must be different" };
