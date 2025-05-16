@@ -206,7 +206,7 @@ router.post("/logout", authMiddleware, async (req, res) => {
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const result = await authServices.getProfile(req.user.userId);
-    res.json(result);
+    res.json(result.user);
   } catch (error) {
     res.status(404).json({ message: error.message });
   }

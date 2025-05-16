@@ -72,7 +72,9 @@ const logout = async (userId) => {
 };
 
 const getProfile = async (id) => {
-  const user = await User.findByPk(id);
+  const user = await User.findByPk(id, {
+    attributes: { exclude: ["refresh_token"] },
+  });
   if (!user) {
     throw new Error("User not found");
   }

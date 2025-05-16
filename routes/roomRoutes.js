@@ -143,7 +143,7 @@ router.post("/:id", authMiddleware, async (req, res) => {
 router.get("/all", authMiddleware, async (req, res) => {
   try {
     const result = await roomServices.getRooms(req.user.userId);
-    res.json(result);
+    res.json(result.rooms);
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message });
   }
@@ -172,7 +172,38 @@ router.get("/all", authMiddleware, async (req, res) => {
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const result = await roomServices.getWaitingRooms();
-    res.json(result);
+    res.json(result.rooms);
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/rooms/{id}:
+ *   delete:
+ *     summary: Delete a room
+ *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the room
+ *     responses:
+ *       201:
+ *         description: Room deleted successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.delete("/:id", authMiddleware, async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await roomServices.deleteRoom(id, req.user.userId);
+    res.status(201).json(result);
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message });
   }

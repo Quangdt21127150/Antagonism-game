@@ -51,4 +51,24 @@ const getWaitingRooms = async () => {
   return { rooms };
 };
 
-module.exports = { createRoom, joinRoom, getRooms, getWaitingRooms };
+const deleteRoom = async (roomId, userId) => {
+  const room = await Room.findByPk(roomId);
+  if (!room) throw { status: 404, message: "Room not found" };
+
+  if (room.owner_id !== userId) {
+    throw { status: 403, message: "Only the room owner can delete the room" };
+  }
+  const match = await Match.findByPk(room.match_id);
+  if (match.status === "waiting") await match.destroy();
+
+  await room.destroy();
+  return { message: "Room deleted successfully" };
+};
+
+module.exports = {
+  createRoom,
+  joinRoom,
+  getRooms,
+  getWaitingRooms,
+  deleteRoom,
+};

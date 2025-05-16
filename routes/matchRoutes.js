@@ -98,7 +98,7 @@ router.post("/", authMiddleware, async (req, res) => {
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const result = await matchServices.getMatches(req.user.userId);
-    res.status(200).json(result);
+    res.status(200).json(result.matches);
   } catch (error) {
     res.status(error.status || 404).json({ message: error.message });
   }
@@ -135,7 +135,7 @@ router.get("/:matchId", authMiddleware, async (req, res) => {
   const matchId = req.params.matchId;
   try {
     const result = await matchServices.getMatchHistory(matchId);
-    res.status(200).json(result);
+    res.status(200).json(result.matchHistory);
   } catch (error) {
     res.status(error.status || 404).json({ message: error.message });
   }
