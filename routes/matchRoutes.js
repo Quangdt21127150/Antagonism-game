@@ -106,7 +106,7 @@ router.get("/", authMiddleware, async (req, res) => {
 
 /**
  * @swagger
- * /api/matches/{match_id}:
+ * /api/matches/{id}:
  *   get:
  *     summary: Load a match
  *     tags: [Matches]
@@ -114,11 +114,11 @@ router.get("/", authMiddleware, async (req, res) => {
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: match_id
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID of the room
+ *         description: ID of the match
  *     responses:
  *       200:
  *         description: The match with following id
@@ -131,8 +131,8 @@ router.get("/", authMiddleware, async (req, res) => {
  *       404:
  *         description: No match found
  */
-router.get("/:matchId", authMiddleware, async (req, res) => {
-  const matchId = req.params.matchId;
+router.get("/:id", authMiddleware, async (req, res) => {
+  const matchId = req.params.id;
   try {
     const result = await matchServices.getMatchHistory(matchId);
     res.status(200).json(result.matchHistory);
