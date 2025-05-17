@@ -66,9 +66,9 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         description: Match not found to save history
  */
 router.post("/", authMiddleware, async (req, res) => {
-  const { matchId, content } = req.body;
+  const { match_id, content } = req.body;
   try {
-    const result = await matchServices.saveMatchHistory(matchId, content);
+    const result = await matchServices.saveMatchHistory(match_id, content);
     res.status(201).json(result);
   } catch (error) {
     res.status(error.status || 404).json({ message: error.message });

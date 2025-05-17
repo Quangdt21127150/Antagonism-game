@@ -51,18 +51,28 @@ const authMiddleware = require("../middleware/authMiddleware");
  *           schema:
  *             type: object
  *             properties:
+ *               opponent_id:
+ *                 type: string
  *               password:
  *                 type: string
  *     responses:
  *       201:
  *         description: Room created successfully
+ *       400:
+ *         description: Two players must be different
  *       401:
  *         description: Unauthorized
+ *       404:
+ *         description: Opponent not found
  */
 router.post("/", authMiddleware, async (req, res) => {
-  const { password } = req.body;
+  const { opponent_id, password } = req.body;
   try {
-    const result = await roomServices.createRoom(password, req.user.userId);
+    const result = await roomServices.createRoom(
+      opponent_id,
+      password,
+      req.user.userId
+    );
     res.status(201).json(result);
   } catch (error) {
     res.status(error.status || 404).json({ message: error.message });
