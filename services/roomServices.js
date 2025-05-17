@@ -1,11 +1,13 @@
 const Room = require("../models/Room");
 const Match = require("../models/Match");
+const { Op } = require("sequelize");
 
-const createRoom = async (password, userId) => {
+const createRoom = async (id, password, userId) => {
   const match = await Match.create({ white_id: userId, status: "waiting" });
 
   const room = await Room.create({
     owner_id: userId,
+    id: id,
     match_id: match.id,
     password: password,
   });
@@ -36,7 +38,25 @@ const getRooms = async (userId) => {
   });
   return { rooms };
 };
-
+const getWaitingRoom = async () => {
+  const room = await Room.findOne({
+    where: {
+      password: { [Op.or]: ["", null] }, // Password is "" or null
+    },
+    include: [
+      {
+        model: Match,
+        as: "match",
+        where: {
+          black_id: null, // Match must have black_id as null
+        },
+        required: true,
+      },
+    ],
+    order: [["created_at", "ASC"]], // Changed from "createdAt" to "created_at"
+  });
+  return { room: room || null }; // Return single room or null if none found
+};
 const getWaitingRooms = async () => {
   const rooms = await Room.findAll({
     include: [
@@ -58,11 +78,15 @@ const deleteRoom = async (roomId, userId) => {
   if (room.owner_id !== userId) {
     throw { status: 403, message: "Only the room owner can delete the room" };
   }
-  const match = await Match.findByPk(room.match_id);
-  if (match.status === "waiting") await match.destroy();
 
-  await room.destroy();
-  return { message: "Room deleted successfully" };
+  const match = await Match.findByPk(room.match_id);
+  if (match) {
+    await match.destroy(); // Delete the match regardless of status
+  }
+
+  await room.destroy(); // Now delete the room
+
+  return { message: "Room and associated match deleted successfully" };
 };
 
 module.exports = {
@@ -70,5 +94,7 @@ module.exports = {
   joinRoom,
   getRooms,
   getWaitingRooms,
+  getWaitingRoom,
   deleteRoom,
+  getWaitingRoom,
 };

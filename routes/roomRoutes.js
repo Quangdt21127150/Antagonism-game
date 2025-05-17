@@ -60,9 +60,9 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         description: Unauthorized
  */
 router.post("/", authMiddleware, async (req, res) => {
-  const { password } = req.body;
+  const { id, password, owner_id } = req.body;
   try {
-    const result = await roomServices.createRoom(password, req.user.userId);
+    const result = await roomServices.createRoom(id, password, owner_id);
     res.status(201).json(result);
   } catch (error) {
     res.status(error.status || 404).json({ message: error.message });

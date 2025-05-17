@@ -34,7 +34,7 @@ const login = async (email, password) => {
   const refreshToken = jwt.sign(
     { userId: user.id },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "15d" }
   );
 
   await user.update({ refresh_token: refreshToken });
@@ -48,7 +48,7 @@ const refreshToken = async (refreshToken) => {
     const user = await User.findOne({
       where: { id: decoded.userId, refresh_token: refreshToken },
     });
-
+    console.log(user);
     if (!user) throw new Error("Invalid refresh token");
 
     const newAccessToken = jwt.sign(
@@ -59,6 +59,8 @@ const refreshToken = async (refreshToken) => {
 
     return { accessToken: newAccessToken };
   } catch (error) {
+    console.log("Invalid or expired refresh token");
+
     throw { status: 403, message: "Invalid or expired refresh token" };
   }
 };

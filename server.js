@@ -8,6 +8,7 @@ const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const sequelize = require("./config/postgres");
+const { getWaitingRoom } = require("./services/roomServices");
 
 const app = express();
 app.use(express.json());
@@ -54,5 +55,18 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use("/api/users", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/matches", matchRoutes);
+app.get("/api/room", async (req, res) => {
+  try {
+    const { room } = await getWaitingRoom();
+    if (room) {
+      res.status(200).json(room);
+    } else {
+      res.status(200).json({}); // Empty object if no room found
+    }
+  } catch (error) {
+    console.error("Error fetching waiting room:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
