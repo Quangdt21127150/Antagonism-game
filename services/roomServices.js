@@ -1,9 +1,34 @@
+const User = require("../models/User");
 const Room = require("../models/Room");
 const Match = require("../models/Match");
 const { Op } = require("sequelize");
 
-const createRoom = async (id, password, userId) => {
-  const match = await Match.create({ white_id: userId, status: "waiting" });
+// const createRoom = async (password, userId) => {
+//   const match = await Match.create({
+//     white_id: userId,
+//     status: "waiting",
+//   });
+
+//   const room = await Room.create({
+//     owner_id: userId,
+//     match_id: match.id,
+//     password: password,
+//   });
+//   return { message: "Room created successfully", roomId: room.id };
+// };
+
+const createRoom = async (opponentId, password, userId) => {
+  const opponent = await User.findByPk(opponentId);
+  if (!opponent) throw { status: 404, message: "Opponent not found" };
+
+  if (opponentId === userId)
+    throw { status: 400, message: "Two players must be different" };
+
+  const match = await Match.create({
+    white_id: userId,
+    black_id: opponentId,
+    status: "ongoing",
+  });
 
   const room = await Room.create({
     owner_id: userId,
@@ -96,5 +121,4 @@ module.exports = {
   getWaitingRooms,
   getWaitingRoom,
   deleteRoom,
-  getWaitingRoom,
 };
