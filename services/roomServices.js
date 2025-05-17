@@ -36,7 +36,7 @@ const createRoom = async (opponentId, password, userId) => {
     match_id: match.id,
     password: password,
   });
-  return { message: "Room created successfully", roomId: room.id };
+  return { message: "Room created successfully", room };
 };
 
 const joinRoom = async (roomId, password, userId) => {
