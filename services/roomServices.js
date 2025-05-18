@@ -32,7 +32,6 @@ const createRoom = async (opponentId, password, userId) => {
 
   const room = await Room.create({
     owner_id: userId,
-    id: id,
     match_id: match.id,
     password: password,
   });
