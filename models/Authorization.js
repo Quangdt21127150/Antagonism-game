@@ -1,44 +1,37 @@
 const DataTypes = require("sequelize");
 const sequelize = require("../config/postgres");
+const User = require("./User");
 
-const User = sequelize.define(
-  "User",
+const Authorization = sequelize.define(
+  "Authorization",
   {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    username: {
+    user_id: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
-    email: {
+    access_token: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
     },
-    password: {
+    refresh_token: {
       type: DataTypes.STRING,
     },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
   },
   {
-    tableName: "users",
+    tableName: "authorization",
     timestamps: false,
   }
 );
 
-User.beforeUpdate((user) => {
-  user.updated_at = new Date();
-});
+Authorization.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
-module.exports = User;
+module.exports = Authorization;
