@@ -56,7 +56,17 @@ const swaggerOptions = {
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocs, {
+    customJs: [
+      "https://unpkg.com/swagger-ui-dist@4/swagger-ui-bundle.js",
+      "https://unpkg.com/swagger-ui-dist@4/swagger-ui-standalone-preset.js",
+    ],
+    customCssUrl: "https://unpkg.com/swagger-ui-dist@4/swagger-ui.css",
+  })
+);
 
 // API routes
 app.use("/api/users", authRoutes);
