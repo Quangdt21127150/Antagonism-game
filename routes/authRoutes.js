@@ -212,12 +212,26 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-router.post("/check-token", authMiddleware, async (req, res) => {
+/**
+ * @swagger
+ * /api/users/check-token:
+ *   get:
+ *     summary: Load a user profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token is valid
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/check-token", authMiddleware, async (req, res) => {
   try {
     const result = await authServices.checkToken(req.user.userId);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(401).json({ message: error.message });
   }
 });
 
