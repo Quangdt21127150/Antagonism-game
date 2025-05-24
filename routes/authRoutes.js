@@ -212,4 +212,13 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
+router.post("/check-token", authMiddleware, async (req, res) => {
+  try {
+    const result = await authServices.checkToken(req.user.userId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

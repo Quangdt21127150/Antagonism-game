@@ -88,4 +88,22 @@ const getProfile = async (id) => {
   return { user };
 };
 
-module.exports = { register, login, refreshToken, logout, getProfile };
+const checkToken = async (userId) => {
+  const authorization = await Authorization.findOne({
+    user_id: userId,
+  });
+  if (!authorization) {
+    throw new Error("Token is invalid");
+  }
+
+  return { message: "Token is valid" };
+};
+
+module.exports = {
+  register,
+  login,
+  refreshToken,
+  logout,
+  getProfile,
+  checkToken,
+};
