@@ -49,10 +49,23 @@ router.get("/leaderboard", async (req, res) => {
   const limit = parseInt(req.query.limit) || 10; // Default to top 10
   try {
     const leaderboard = await User.findAll({
-      attributes: ["id", "username", "elo"],
-      order: [["elo", "DESC"]],
+      attributes: [
+        "id",
+        "username",
+        "elo",
+        "win_count",
+        "lose_count",
+        [
+          User.sequelize.literal(
+            "CASE WHEN (win_count + lose_count) > 0 THEN ROUND((win_count::FLOAT / (win_count + lose_count)) * 100, 2) ELSE 0 END"
+          ),
+          "win_rate",
+        ],
+      ],
+      order: [["elo", "DESC"]], // Sort by elo descending
       limit: Math.min(limit, 100), // Cap limit at 100
     });
+
     res.status(200).json(leaderboard);
   } catch (error) {
     console.error("Error fetching leaderboard:", error);

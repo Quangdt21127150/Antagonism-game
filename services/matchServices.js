@@ -2,7 +2,7 @@ const { Op } = require("sequelize");
 const Match = require("../models/Match");
 const MatchHistory = require("../models/MatchHistory");
 
-const saveMatchHistory = async (matchId, content) => {
+const saveMatchHistory = async (matchId, content, status) => {
   // Start a transaction to ensure atomicity
   const transaction = await sequelize.transaction();
 
@@ -21,18 +21,30 @@ const saveMatchHistory = async (matchId, content) => {
       throw new Error("Match not found to save history");
     }
 
+    // Validate status
+    if (status && !["win", "lose", "draw"].includes(status)) {
+      await transaction.rollback();
+      throw new Error("Invalid status provided");
+    }
+
+    // Update match status if provided
+    if (status && ["win", "lose"].includes(status)) {
+      await Match.update({ status }, { where: { id: matchId }, transaction });
+      // Note: The database trigger will handle win_count and lose_count updates
+    }
+
     // Save match history
     await MatchHistory.create({ match_id: matchId, content }, { transaction });
 
     // Update Elo if match_type is 1 and status is win or lose
-    if (match.match_type === 1 && ["win", "lose"].includes(match.status)) {
+    if (match.match_type === 1 && status && ["win", "lose"].includes(status)) {
       let winner, loser;
 
       // Determine winner and loser based on status
-      if (match.status === "win") {
+      if (status === "win") {
         winner = match.white; // white_id wins
         loser = match.black; // black_id loses
-      } else if (match.status === "lose") {
+      } else if (status === "lose") {
         winner = match.black; // black_id wins
         loser = match.white; // white_id loses
       }

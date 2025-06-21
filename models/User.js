@@ -32,7 +32,19 @@ const User = sequelize.define(
     },
     elo: {
       type: DataTypes.INTEGER,
-      defaultValue: 1000,
+      defaultValue: 0,
+    },
+    win_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    lose_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    star: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
     },
   },
   {

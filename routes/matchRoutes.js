@@ -131,6 +131,7 @@ router.get("/", authMiddleware, async (req, res) => {
  *       404:
  *         description: No match found
  */
+
 router.get("/:id", authMiddleware, async (req, res) => {
   const matchId = req.params.id;
   try {
@@ -151,43 +152,27 @@ router.get("/rate/:id", authMiddleware, async (req, res) => {
   }
 
   try {
-    // Verify user exists
-    const user = await User.findByPk(userId);
+    // Fetch user with win_count and lose_count
+    const user = await User.findByPk(userId, {
+      attributes: ["id", "username", "elo", "win_count", "lose_count"],
+    });
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Count wins
-    const wins = await Match.count({
-      where: {
-        [Op.or]: [
-          { white_id: userId, status: "win" },
-          { black_id: userId, status: "lose" },
-        ],
-      },
-    });
-
-    // Count losses
-    const losses = await Match.count({
-      where: {
-        [Op.or]: [
-          { white_id: userId, status: "lose" },
-          { black_id: userId, status: "win" },
-        ],
-      },
-    });
-
-    // Count draws
+    // Count draws for match_type = 1
     const draws = await Match.count({
       where: {
-        [Op.or]: [
-          { white_id: userId, status: "draw" },
-          { black_id: userId, status: "draw" },
-        ],
+        match_type: 1,
+        status: "draw",
+        [Op.or]: [{ white_id: userId }, { black_id: userId }],
       },
     });
 
     // Calculate total and win rate
+    const wins = user.win_count;
+    const losses = user.lose_count;
     const total = wins + losses + draws;
     const winRate = total > 0 ? ((wins / total) * 100).toFixed(2) : 0;
 
