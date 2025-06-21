@@ -35,6 +35,10 @@ const Match = sequelize.define(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    match_type: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
   },
   {
     tableName: "matches",

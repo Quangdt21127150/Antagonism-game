@@ -30,6 +30,10 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    elo: {
+      type: DataTypes.INTEGER,
+      defaultValue: 1000,
+    },
   },
   {
     tableName: "users",

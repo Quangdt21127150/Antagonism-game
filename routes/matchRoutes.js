@@ -140,5 +140,74 @@ router.get("/:id", authMiddleware, async (req, res) => {
     res.status(error.status || 404).json({ message: error.message });
   }
 });
+router.get("/rate/:id", authMiddleware, async (req, res) => {
+  const userId = req.params.id;
 
+  // Ensure the authenticated user can only access their own stats
+  if (req.user.id !== userId) {
+    return res
+      .status(403)
+      .json({ message: "Unauthorized: You can only view your own stats" });
+  }
+
+  try {
+    // Verify user exists
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Count wins
+    const wins = await Match.count({
+      where: {
+        [Op.or]: [
+          { white_id: userId, status: "win" },
+          { black_id: userId, status: "lose" },
+        ],
+      },
+    });
+
+    // Count losses
+    const losses = await Match.count({
+      where: {
+        [Op.or]: [
+          { white_id: userId, status: "lose" },
+          { black_id: userId, status: "win" },
+        ],
+      },
+    });
+
+    // Count draws
+    const draws = await Match.count({
+      where: {
+        [Op.or]: [
+          { white_id: userId, status: "draw" },
+          { black_id: userId, status: "draw" },
+        ],
+      },
+    });
+
+    // Calculate total and win rate
+    const total = wins + losses + draws;
+    const winRate = total > 0 ? ((wins / total) * 100).toFixed(2) : 0;
+
+    const result = {
+      userId,
+      username: user.username,
+      elo: user.elo,
+      wins,
+      losses,
+      draws,
+      total,
+      winRate,
+    };
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching match stats:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal server error" });
+  }
+});
 module.exports = router;
