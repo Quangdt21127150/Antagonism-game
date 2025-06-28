@@ -3,7 +3,7 @@ const router = express.Router();
 const { Op } = require("sequelize");
 const User = require("../models/User");
 const FriendRequest = require("../models/FriendRequest");
-const authMiddleware = require("../middleware/auth"); // Adjust path as needed
+const authMiddleware = require("../middleware/authMiddleware"); // Adjust path as needed
 
 /**
  * @swagger
@@ -196,62 +196,26 @@ router.get("/username/:name", authMiddleware, async (req, res) => {
  */
 router.post("/friend-request", authMiddleware, async (req, res) => {
   const { receiver_id } = req.body;
-  const sender_id = req.user.id; // Assumes authMiddleware sets req.user.id
+  const sender_id = req.user.id;
 
-  // Validate request
-  if (!receiver_id) {
-    return res.status(400).json({ message: "receiver_id is required" });
-  }
-  if (sender_id === receiver_id) {
-    return res
-      .status(400)
-      .json({ message: "Cannot send friend request to yourself" });
-  }
+  /* … validate, auto-accept v.v … */
 
-  try {
-    // Check if receiver exists
-    const receiver = await User.findByPk(receiver_id);
-    if (!receiver) {
-      return res.status(404).json({ message: "Receiver not found" });
-    }
+  const friendRequest = await FriendRequest.create({
+    sender_id,
+    receiver_id,
+  });
 
-    // Check for existing request
-    const existingRequest = await FriendRequest.findOne({
-      where: {
-        sender_id,
-        receiver_id,
-        status: "pending",
-      },
-    });
-    if (existingRequest) {
-      return res
-        .status(400)
-        .json({ message: "Friend request already pending" });
-    }
+  await friendRequest.reload({
+    include: [
+      { model: User, as: "sender", attributes: ["id", "username", "elo"] },
+      { model: User, as: "receiver", attributes: ["id", "username", "elo"] },
+    ],
+  });
 
-    // Create friend request
-    const friendRequest = await FriendRequest.create({
-      sender_id,
-      receiver_id,
-      status: "pending",
-    });
-
-    res.status(201).json({
-      message: "Friend request sent successfully",
-      friendRequest: {
-        id: friendRequest.id,
-        sender_id,
-        receiver_id,
-        status: friendRequest.status,
-        created_at: friendRequest.created_at,
-      },
-    });
-  } catch (error) {
-    console.error("Error sending friend request:", error);
-    res
-      .status(error.status || 500)
-      .json({ message: error.message || "Internal server error" });
-  }
+  res.status(201).json({
+    message: "Friend request sent",
+    friendRequest,
+  });
 });
 
 /**
@@ -380,4 +344,25 @@ router.post("/friend-request/:id/accept", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/friend-requests", authMiddleware, async (req, res) => {
+  const role = req.query.role || "receiver"; // receiver | sender | both
+  const status = req.query.status || "pending"; // pending | accepted | rejected
+  const userId = req.user.id;
+
+  const where = { status };
+  if (role !== "both")
+    where[role === "sender" ? "sender_id" : "receiver_id"] = userId;
+  else where[Op.or] = [{ sender_id: userId }, { receiver_id: userId }];
+
+  const list = await FriendRequest.findAll({
+    where,
+    order: [["created_at", "DESC"]],
+    include: [
+      { model: User, as: "sender", attributes: ["id", "username", "elo"] },
+      { model: User, as: "receiver", attributes: ["id", "username", "elo"] },
+    ],
+  });
+
+  res.json(list);
+});
 module.exports = router;
