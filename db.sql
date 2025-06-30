@@ -4,15 +4,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Drop everything (idempotent)
 DROP TABLE IF EXISTS match_histories  CASCADE;
 DROP TABLE IF EXISTS friend_requests  CASCADE;
-DROP TABLE IF EXISTS authorization    CASCADE;
+DROP TABLE IF EXISTS "authorization"    CASCADE;
 DROP TABLE IF EXISTS rooms            CASCADE;
 DROP TABLE IF EXISTS matches          CASCADE;
 DROP TABLE IF EXISTS users            CASCADE;
 
-DROP TRIGGER  IF EXISTS match_status_trigger  ON matches;
 DROP FUNCTION IF EXISTS update_user_win_lose_count;
 DROP FUNCTION IF EXISTS trg_friend_req_upd_time;
-
 /*━━━━━━━━ USERS ━━━━━━━*/
 CREATE TABLE users (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,7 +61,7 @@ ON friend_requests(sender_id, receiver_id)
 WHERE status = 'pending';
 
 /*━━━━━━━━ AUTHORIZATION ━*/
-CREATE TABLE authorization (
+CREATE TABLE "authorization" (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID NOT NULL UNIQUE REFERENCES users(id),
   access_token  VARCHAR(255),
