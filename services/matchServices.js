@@ -1,13 +1,13 @@
 const { Op } = require("sequelize");
 const Match = require("../models/Match");
 const MatchHistory = require("../models/MatchHistory");
-
+const sequelize = require("../config/postgres");
+const User = require("../models/User");
 const saveMatchHistory = async (matchId, content, status) => {
-  // Start a transaction to ensure atomicity
   const transaction = await sequelize.transaction();
 
   try {
-    // Find the match
+    console.log("🔍 Fetching match:", matchId);
     const match = await Match.findByPk(matchId, {
       include: [
         { model: User, as: "white" },
@@ -17,78 +17,71 @@ const saveMatchHistory = async (matchId, content, status) => {
     });
 
     if (!match) {
-      await transaction.rollback();
       throw new Error("Match not found to save history");
     }
+    console.log("✅ Match found:", match.id);
 
-    // Validate status
     if (status && !["win", "lose", "draw"].includes(status)) {
-      await transaction.rollback();
       throw new Error("Invalid status provided");
     }
 
-    // Update match status if provided
     if (status && ["win", "lose"].includes(status)) {
-      await Match.update({ status }, { where: { id: matchId }, transaction });
-      // Note: The database trigger will handle win_count and lose_count updates
+      await match.update({ status }, { transaction });
+      console.log("✅ Match status updated to:", status);
     }
 
-    // Save match history
+    console.log("📝 Creating match history...");
     await MatchHistory.create({ match_id: matchId, content }, { transaction });
+    console.log("✅ Match history saved");
 
-    // Update Elo if match_type is 1 and status is win or lose
+    // Update Elo only for rank matches
     if (match.match_type === 1 && status && ["win", "lose"].includes(status)) {
       let winner, loser;
-
-      // Determine winner and loser based on status
       if (status === "win") {
-        winner = match.white; // white_id wins
-        loser = match.black; // black_id loses
+        winner = match.white;
+        loser = match.black;
       } else if (status === "lose") {
-        winner = match.black; // black_id wins
-        loser = match.white; // white_id loses
+        winner = match.black;
+        loser = match.white;
       }
 
-      // Ensure both players exist
       if (!winner || !loser) {
-        await transaction.rollback();
-        throw new Error("Winner or loser not found");
+        throw new Error("Winner or loser not found for Elo update");
       }
 
-      // K-factor based on Elo
+      console.log("⚡ Updating Elo: winner", winner.id, "loser", loser.id);
+
       const getKFactor = (elo) => {
-        if (elo < 1000) return 32; // New player
-        if (elo < 2000) return 24; // Intermediate
-        return 16; // Expert
+        if (elo < 1000) return 32;
+        if (elo < 2000) return 24;
+        return 16;
       };
 
       const winnerK = getKFactor(winner.elo);
       const loserK = getKFactor(loser.elo);
 
-      // Calculate expected scores
       const expectedWin =
         1 / (1 + Math.pow(10, (loser.elo - winner.elo) / 400));
       const expectedLose = 1 - expectedWin;
 
-      // Update Elo
       const newWinnerElo = Math.round(winner.elo + winnerK * (1 - expectedWin));
       const newLoserElo = Math.round(loser.elo - loserK * expectedLose);
 
-      // Clamp Elo between 0 and 3000
       winner.elo = Math.min(3000, Math.max(0, newWinnerElo));
       loser.elo = Math.min(3000, Math.max(0, newLoserElo));
 
-      // Save updated Elo
       await winner.save({ transaction });
       await loser.save({ transaction });
+
+      console.log("✅ Elo updated: winner", winner.elo, "loser", loser.elo);
     }
 
-    // Commit transaction
     await transaction.commit();
+    console.log("✅ Transaction committed for match:", matchId);
 
     return { message: "Match history saved successfully" };
   } catch (error) {
-    // Rollback transaction on error
+    console.log("❌ Error saving match history:", error.message);
     await transaction.rollback();
     throw error;
   }

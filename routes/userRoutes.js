@@ -48,24 +48,21 @@ const authMiddleware = require("../middleware/authMiddleware"); // Adjust path a
 router.get("/leaderboard", async (req, res) => {
   const limit = parseInt(req.query.limit) || 10; // Default to top 10
   try {
-    const leaderboard = await User.findAll({
-      attributes: [
-        "id",
-        "username",
-        "elo",
-        "win_count",
-        "lose_count",
-        [
-          User.sequelize.literal(
-            "CASE WHEN (win_count + lose_count) > 0 THEN ROUND((win_count::FLOAT / (win_count + lose_count)) * 100, 2) ELSE 0 END"
-          ),
-          "win_rate",
-        ],
-      ],
-      order: [["elo", "DESC"]], // Sort by elo descending
-      limit: Math.min(limit, 100), // Cap limit at 100
+    const users = await User.findAll({
+      attributes: ["id", "username", "elo", "win_count", "lose_count"],
+      order: [["elo", "DESC"]],
+      limit: Math.min(limit, 100),
     });
 
+    const leaderboard = users.map((user) => {
+      const total = user.win_count + user.lose_count;
+      const win_rate =
+        total > 0 ? Math.round((user.win_count / total) * 10000) / 100 : 0;
+      return {
+        ...user.get(),
+        win_rate,
+      };
+    });
     res.status(200).json(leaderboard);
   } catch (error) {
     console.error("Error fetching leaderboard:", error);
@@ -196,7 +193,7 @@ router.get("/username/:name", authMiddleware, async (req, res) => {
  */
 router.post("/friend-request", authMiddleware, async (req, res) => {
   const { receiver_id } = req.body;
-  const sender_id = req.user.id;
+  const sender_id = req.user.userId;
 
   /* … validate, auto-accept v.v … */
 
@@ -247,10 +244,12 @@ router.post("/friend-request", authMiddleware, async (req, res) => {
  *         description: Internal server error
  */
 router.get("/friends", authMiddleware, async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
+  if (!userId) {
+    return res.status(401).json({ message: "Invalid token: missing user ID" });
+  }
 
   try {
-    // Find accepted friend requests where user is sender or receiver
     const friendRequests = await FriendRequest.findAll({
       where: {
         [Op.or]: [{ sender_id: userId }, { receiver_id: userId }],
@@ -262,21 +261,14 @@ router.get("/friends", authMiddleware, async (req, res) => {
       ],
     });
 
-    // Extract friends (users on the other side of the request)
-    const friends = friendRequests.map((request) => {
-      if (request.sender_id === userId) {
-        return request.receiver;
-      } else {
-        return request.sender;
-      }
-    });
+    const friends = friendRequests.map((request) =>
+      request.sender_id === userId ? request.receiver : request.sender
+    );
 
     res.status(200).json(friends);
-  } catch (error) {
-    console.error("Error fetching friend list:", error);
-    res
-      .status(error.status || 500)
-      .json({ message: error.message || "Internal server error" });
+  } catch (err) {
+    console.error("Error fetching friend list:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -313,7 +305,7 @@ router.get("/friends", authMiddleware, async (req, res) => {
  */
 router.post("/friend-request/:id/accept", authMiddleware, async (req, res) => {
   const requestId = req.params.id;
-  const userId = req.user.id;
+  const userId = req.user.userId;
 
   try {
     // Find the friend request where the user is the receiver and status is pending
@@ -344,10 +336,10 @@ router.post("/friend-request/:id/accept", authMiddleware, async (req, res) => {
   }
 });
 
-router.get("/friend-requests", authMiddleware, async (req, res) => {
+router.get("/friend-request", authMiddleware, async (req, res) => {
   const role = req.query.role || "receiver"; // receiver | sender | both
   const status = req.query.status || "pending"; // pending | accepted | rejected
-  const userId = req.user.id;
+  const userId = req.user.userId;
 
   const where = { status };
   if (role !== "both")

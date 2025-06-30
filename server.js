@@ -73,7 +73,7 @@ app.use(
 app.use("/api/users", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/matches", matchRoutes);
-app.use("/api/user", userRoutes);
+app.use("/api/", userRoutes);
 
 // Default route
 app.get("/", (req, res) => {
