@@ -117,17 +117,39 @@ router.get("/leaderboard", async (req, res) => {
  *       500:
  *         description: Internal server error
  */
+
 router.get("/username/:name", authMiddleware, async (req, res) => {
   const username = req.params.name;
+  const currentUserId = req.user.userId; // Lấy ID của người dùng hiện tại từ token
+
   try {
+    // Tìm người dùng theo username
     const user = await User.findOne({
       where: { username },
       attributes: ["id", "username", "elo", "created_at"],
     });
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(user);
+
+    // Kiểm tra xem có FriendRequest nào mà sender_id là currentUserId và receiver_id là user.id
+    const friendRequest = await FriendRequest.findOne({
+      where: {
+        sender_id: currentUserId,
+        receiver_id: user.id,
+      },
+      attributes: ["id", "status"],
+    });
+
+    // Tạo response với user và thông tin friendRequest (chỉ status và id)
+    const response = {
+      ...user.get({ plain: true }), // Chuyển đổi instance Sequelize thành plain object
+      friend_request_id: friendRequest ? friendRequest.id : null,
+      friend_request_status: friendRequest ? friendRequest.status : null,
+    };
+
+    res.status(200).json(response);
   } catch (error) {
     console.error("Error fetching user by username:", error);
     res
@@ -261,10 +283,15 @@ router.get("/friends", authMiddleware, async (req, res) => {
       ],
     });
 
-    const friends = friendRequests.map((request) =>
-      request.sender_id === userId ? request.receiver : request.sender
-    );
-
+    const friends = friendRequests.map((request) => {
+      const friend =
+        request.sender_id === userId ? request.receiver : request.sender;
+      return {
+        ...friend.get({ plain: true }),
+        friend_request_id: request.id,
+      };
+    });
+    console.log("Friends:", friends);
     res.status(200).json(friends);
   } catch (err) {
     console.error("Error fetching friend list:", err);
@@ -335,6 +362,89 @@ router.post("/friend-request/:id/accept", authMiddleware, async (req, res) => {
       .json({ message: error.message || "Internal server error" });
   }
 });
+/**
+ * @swagger
+ * /friend-request/{id}/cancel:
+ *   delete:
+ *     summary: Cancel a sent friend request
+ *     description: Cancel (delete) a pending friend request sent by the authenticated user.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID of the friend request to cancel
+ *     responses:
+ *       200:
+ *         description: Friend request cancelled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       403:
+ *         description: Not authorized to cancel this friend request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Friend request not found or not pending
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Internal server error
+ */
+router.delete(
+  "/friend-request/:id/cancel",
+  authMiddleware,
+  async (req, res) => {
+    const requestId = req.params.id;
+    const userId = req.user.userId;
+    console.log("Cancelling friend request:", requestId, "by user:", userId);
+    try {
+      // Find the friend request where the user is the sender and status is pending
+      const friendRequest = await FriendRequest.findOne({
+        where: {
+          id: requestId,
+          sender_id: userId,
+        },
+      });
+
+      if (!friendRequest) {
+        return res
+          .status(404)
+          .json({ message: "Friend request not found or not pending" });
+      }
+
+      // Delete the friend request
+      await friendRequest.destroy();
+
+      res
+        .status(200)
+        .json({ message: "Friend request cancelled successfully" });
+    } catch (error) {
+      console.error("Error cancelling friend request:", error);
+      res
+        .status(error.status || 500)
+        .json({ message: error.message || "Internal server error" });
+    }
+  }
+);
 
 router.get("/friend-request", authMiddleware, async (req, res) => {
   const role = req.query.role || "receiver"; // receiver | sender | both
