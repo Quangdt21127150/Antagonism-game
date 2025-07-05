@@ -5,6 +5,7 @@ const swaggerJsDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
+const userRoutes = require("./routes/userRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const sequelize = require("./config/postgres");
 const path = require("path");
@@ -72,6 +73,7 @@ app.use(
 app.use("/api/users", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/matches", matchRoutes);
+app.use("/api/", userRoutes);
 
 // Default route
 app.get("/", (req, res) => {

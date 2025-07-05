@@ -27,9 +27,6 @@ const Room = sequelize.define(
         key: "id",
       },
     },
-    password: {
-      type: DataTypes.STRING,
-    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

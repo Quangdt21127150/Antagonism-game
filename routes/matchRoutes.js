@@ -66,11 +66,17 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         description: Match not found to save history
  */
 router.post("/", authMiddleware, async (req, res) => {
-  const { match_id, content } = req.body;
+  const { match_id, content, status } = req.body;
   try {
-    const result = await matchServices.saveMatchHistory(match_id, content);
+    console.log("Saving match history:", match_id, content, status);
+    const result = await matchServices.saveMatchHistory(
+      match_id,
+      content,
+      status
+    );
     res.status(201).json(result);
   } catch (error) {
+    console.error("Error saving match history:", error);
     res.status(error.status || 404).json({ message: error.message });
   }
 });
@@ -131,6 +137,7 @@ router.get("/", authMiddleware, async (req, res) => {
  *       404:
  *         description: No match found
  */
+
 router.get("/:id", authMiddleware, async (req, res) => {
   const matchId = req.params.id;
   try {
@@ -140,5 +147,58 @@ router.get("/:id", authMiddleware, async (req, res) => {
     res.status(error.status || 404).json({ message: error.message });
   }
 });
+router.get("/rate/:id", authMiddleware, async (req, res) => {
+  const userId = req.params.id;
 
+  // Ensure the authenticated user can only access their own stats
+  if (req.user.id !== userId) {
+    return res
+      .status(403)
+      .json({ message: "Unauthorized: You can only view your own stats" });
+  }
+
+  try {
+    // Fetch user with win_count and lose_count
+    const user = await User.findByPk(userId, {
+      attributes: ["id", "username", "elo", "win_count", "lose_count"],
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Count draws for match_type = 1
+    const draws = await Match.count({
+      where: {
+        match_type: 1,
+        status: "draw",
+        [Op.or]: [{ white_id: userId }, { black_id: userId }],
+      },
+    });
+
+    // Calculate total and win rate
+    const wins = user.win_count;
+    const losses = user.lose_count;
+    const total = wins + losses + draws;
+    const winRate = total > 0 ? ((wins / total) * 100).toFixed(2) : 0;
+
+    const result = {
+      userId,
+      username: user.username,
+      elo: user.elo,
+      wins,
+      losses,
+      draws,
+      total,
+      winRate,
+    };
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching match stats:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal server error" });
+  }
+});
 module.exports = router;

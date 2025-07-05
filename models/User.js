@@ -30,6 +30,22 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    elo: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    win_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    lose_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    star: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
   },
   {
     tableName: "users",

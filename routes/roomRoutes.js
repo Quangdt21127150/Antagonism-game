@@ -22,9 +22,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         match_id:
  *           type: string
  *           description: ID of the match occuring in the room
- *         password:
- *           type: string
- *           description: Password of the room
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -53,8 +50,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *             properties:
  *               opponent_id:
  *                 type: string
- *               password:
- *                 type: string
  *     responses:
  *       201:
  *         description: Room created successfully
@@ -66,157 +61,17 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         description: Opponent not found
  */
 router.post("/", authMiddleware, async (req, res) => {
-  const { opponent_id, password } = req.body;
+  const { opponent_id, roomType } = req.body;
   try {
     const result = await roomServices.createRoom(
       opponent_id,
-      password,
+      roomType,
       req.user.userId
     );
     res.status(201).json(result);
   } catch (error) {
     console.log(error);
     res.status(error.status || 404).json({ message: error.message });
-  }
-});
-
-/**
- * @swagger
- * /api/rooms/{id}:
- *   post:
- *     summary: Join a room
- *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the room
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               password:
- *                 type: string
- *     responses:
- *       200:
- *         description: Join room successfully
- *       400:
- *         description: Two players must be different
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Incorrect password
- *       404:
- *         description: Room not found
- */
-router.post("/:id", authMiddleware, async (req, res) => {
-  const { password } = req.body;
-  const roomId = req.params.id;
-  try {
-    const result = await roomServices.joinRoom(
-      roomId,
-      password,
-      req.user.userId
-    );
-    res.json(result);
-  } catch (error) {
-    res.status(error.status || 400).json({ message: error.message });
-  }
-});
-
-/**
- * @swagger
- * /api/rooms/all:
- *   get:
- *     summary: Get all rooms belonging to user
- *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: A list of all rooms belonging to user
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Room'
- *       401:
- *         description: Unauthorized
- */
-router.get("/all", authMiddleware, async (req, res) => {
-  try {
-    const result = await roomServices.getRooms(req.user.userId);
-    res.json(result.rooms);
-  } catch (error) {
-    res.status(error.status || 500).json({ message: error.message });
-  }
-});
-
-/**
- * @swagger
- * /api/rooms:
- *   get:
- *     summary: Get waiting rooms
- *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: A list of waiting rooms
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Room'
- *       401:
- *         description: Unauthorized
- */
-router.get("/", authMiddleware, async (req, res) => {
-  try {
-    const result = await roomServices.getWaitingRooms();
-    res.json(result.rooms);
-  } catch (error) {
-    res.status(error.status || 500).json({ message: error.message });
-  }
-});
-
-/**
- * @swagger
- * /api/rooms/{id}:
- *   delete:
- *     summary: Delete a room
- *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the room
- *     responses:
- *       201:
- *         description: Room deleted successfully
- *       401:
- *         description: Unauthorized
- */
-router.delete("/:id", authMiddleware, async (req, res) => {
-  const id = req.params.id;
-  try {
-    const result = await roomServices.deleteRoom(id, req.user.userId);
-    res.status(201).json(result);
-  } catch (error) {
-    res.status(error.status || 500).json({ message: error.message });
   }
 });
 

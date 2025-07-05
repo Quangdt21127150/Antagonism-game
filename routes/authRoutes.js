@@ -70,6 +70,7 @@ const authMiddleware = require("../middleware/authMiddleware");
  */
 router.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
+  console.log("Registering user:", username, email);
   try {
     const result = await authServices.register(username, email, password);
     res.status(201).json(result);
