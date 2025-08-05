@@ -7,6 +7,7 @@ const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const userRoutes = require("./routes/userRoutes");
 const matchRoutes = require("./routes/matchRoutes");
+const itemRoutes = require("./routes/itemRoutes");
 const sequelize = require("./config/postgres");
 const path = require("path");
 
@@ -38,7 +39,7 @@ const swaggerOptions = {
     info: {
       title: "Game API",
       version: "1.0.0",
-      description: "API for managing users and friends",
+      description: "API for managing users, friends, and items",
     },
     servers: [
       { url: process.env.BASE_URL || "https://antagonism-game.vercel.app" },
@@ -74,6 +75,7 @@ app.use("/api/users", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/", userRoutes);
+app.use("/api/items", itemRoutes);
 
 // Default route
 app.get("/", (req, res) => {

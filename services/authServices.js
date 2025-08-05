@@ -17,7 +17,11 @@ const register = async (username, email, password) => {
   if (existingUser) throw { status: 409, message: "User already exist" };
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await User.create({ username, email, password: hashedPassword });
+  const user = await User.create({
+    username,
+    email,
+    password: hashedPassword,
+  });
   return { message: "User registered successfully", userId: user.id };
 };
 
@@ -28,7 +32,7 @@ const login = async (email, password) => {
   }
 
   const accessToken = jwt.sign(
-    { userId: user.id, email: user.email },
+    { userId: user.id, email: user.email, isAdmin: user.isAdmin },
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: "15m" }
   );
@@ -46,7 +50,12 @@ const login = async (email, password) => {
     refresh_token: refreshToken,
   });
 
-  return { message: "Login successful", accessToken, refreshToken };
+  return {
+    message: "Login successful",
+    accessToken,
+    refreshToken,
+    isAdmin: user.isAdmin,
+  };
 };
 
 const refreshToken = async (refreshToken) => {
@@ -58,7 +67,7 @@ const refreshToken = async (refreshToken) => {
     if (!user) throw new Error("Invalid refresh token");
 
     const newAccessToken = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, isAdmin: user.isAdmin },
       process.env.JWT_ACCESS_SECRET,
       { expiresIn: "15m" }
     );
@@ -80,7 +89,9 @@ const logout = async (userId) => {
 };
 
 const getProfile = async (id) => {
-  const user = await User.findByPk(id);
+  const user = await User.findByPk(id, {
+    attributes: ["id", "username", "email", "created_at", "updated_at"],
+  });
   if (!user) {
     throw new Error("User not found");
   }
@@ -90,7 +101,7 @@ const getProfile = async (id) => {
 
 const checkToken = async (userId) => {
   const authorization = await Authorization.findOne({
-    user_id: userId,
+    where: { user_id: userId },
   });
   if (!authorization) {
     throw new Error("Token is invalid");
