@@ -3,6 +3,7 @@ const router = express.Router();
 const Item = require("../models/Item");
 const authMiddleware = require("../middleware/authMiddleware");
 
+// GET all items
 /**
  * @swagger
  * components:
@@ -26,7 +27,7 @@ const authMiddleware = require("../middleware/authMiddleware");
  *           description: Price of the item in VND
  *         number:
  *           type: integer
- *           description: Number of coins for the item
+ *           description: Quantity of the item
  *         image:
  *           type: string
  *           description: URL of the item image
@@ -40,7 +41,7 @@ const authMiddleware = require("../middleware/authMiddleware");
  * @swagger
  * /api/items:
  *   get:
- *     summary: Get all items
+ *     summary: Retrieve all items
  *     tags: [Items]
  *     security:
  *       - bearerAuth: []
@@ -68,6 +69,7 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
+// POST a new item
 /**
  * @swagger
  * /api/items:
@@ -79,7 +81,7 @@ router.get("/", authMiddleware, async (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
@@ -114,11 +116,14 @@ router.get("/", authMiddleware, async (req, res) => {
  */
 router.post("/", authMiddleware, async (req, res) => {
   const { name, price, number, image } = req.body;
-
   if (!req.user.isAdmin) {
     return res.status(403).json({ message: "Admin access required" });
   }
-
+  if (!name || !price || !number) {
+    return res
+      .status(400)
+      .json({ message: "Name, price, and quantity are required" });
+  }
   try {
     const item = await Item.create({ name, price, number, image });
     res.status(201).json(item);
@@ -128,6 +133,86 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
+// PUT to update an item
+/**
+ * @swagger
+ * /api/items/{id}:
+ *   put:
+ *     summary: Update an item
+ *     tags: [Items]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID of the item to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: integer
+ *               number:
+ *                 type: integer
+ *               image:
+ *                 type: string
+ *                 description: URL of the item image
+ *             required:
+ *               - name
+ *               - price
+ *               - number
+ *     responses:
+ *       200:
+ *         description: Item updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Item'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin access required
+ *       404:
+ *         description: Item not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/:id", authMiddleware, async (req, res) => {
+  const itemId = req.params.id;
+  const { name, price, number, image } = req.body;
+  if (!req.user.isAdmin) {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  if (!name || !price || !number) {
+    return res
+      .status(400)
+      .json({ message: "Name, price, and quantity are required" });
+  }
+  try {
+    const item = await Item.findByPk(itemId);
+    if (!item) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+    await item.update({ name, price, number, image });
+    res.status(200).json(item);
+  } catch (error) {
+    console.error("Error updating item:", error);
+    res.status(500).json({ message: error.message || "Internal server error" });
+  }
+});
+
+// DELETE an item
 /**
  * @swagger
  * /api/items/{id}:
