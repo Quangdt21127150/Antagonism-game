@@ -11,6 +11,8 @@ DROP TABLE IF EXISTS users            CASCADE;
 DROP TABLE IF EXISTS items            CASCADE;
 DROP TABLE IF EXISTS "Vouchers"       CASCADE;
 DROP TABLE IF EXISTS voucher_redemptions CASCADE;
+DROP TABLE IF EXISTS item_purchases   CASCADE;
+DROP TABLE IF EXISTS payments         CASCADE;
 
 DROP FUNCTION IF EXISTS update_user_win_lose_count;
 DROP FUNCTION IF EXISTS trg_friend_req_upd_time;
@@ -26,6 +28,7 @@ CREATE TABLE users (
   win_count  INTEGER  DEFAULT 0,
   lose_count INTEGER  DEFAULT 0,
   star       INTEGER  DEFAULT 0,
+  coin       INTEGER  DEFAULT 0,
   "isAdmin"  BOOLEAN  DEFAULT FALSE
 );
 
@@ -115,6 +118,57 @@ CREATE TABLE voucher_redemptions (
   UNIQUE(user_id, voucher_id)
 );
 
+/*━━━━━━━━ ITEM PURCHASES ━━━━━━━━*/
+CREATE TABLE item_purchases (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  item_id     UUID NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+  quantity    INTEGER NOT NULL DEFAULT 1,
+  stars_spent INTEGER NOT NULL,
+  coins_earned INTEGER NOT NULL,
+  purchased_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+/*━━━━━━━━ PAYMENTS ━━━━━━━━*/
+CREATE TABLE payments (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id              UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  order_id             VARCHAR(255) NOT NULL UNIQUE,
+  request_id           VARCHAR(255) NOT NULL UNIQUE,
+  amount               BIGINT NOT NULL,
+  stars_to_add         INTEGER NOT NULL,
+  payment_method       VARCHAR(50) DEFAULT 'momo',
+  status               VARCHAR(20) CHECK (status IN ('pending','completed','failed','cancelled')) DEFAULT 'pending',
+  momo_transaction_id  VARCHAR(255),
+  momo_response        JSONB,
+  created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  completed_at         TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_payments_user_id ON payments(user_id);
+CREATE INDEX idx_payments_order_id ON payments(order_id);
+CREATE INDEX idx_payments_status ON payments(status);
+
+/*━━━━━━━━ PAYMENTS ━━━━━━━━*/
+CREATE TABLE payments (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id              UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  order_id             VARCHAR(255) NOT NULL UNIQUE,
+  request_id           VARCHAR(255) NOT NULL UNIQUE,
+  amount               BIGINT NOT NULL,
+  stars_to_add         INTEGER NOT NULL,
+  payment_method       VARCHAR(50) DEFAULT 'momo',
+  status               VARCHAR(20) CHECK (status IN ('pending','completed','failed','cancelled')) DEFAULT 'pending',
+  momo_transaction_id  VARCHAR(255),
+  momo_response        JSONB,
+  created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  completed_at         TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_payments_user_id ON payments(user_id);
+CREATE INDEX idx_payments_order_id ON payments(order_id);
+CREATE INDEX idx_payments_status ON payments(status);
+
 /*━━━━━━━━ FUNCTION & TRIGGER: update win/lose count ━*/
 CREATE OR REPLACE FUNCTION update_user_win_lose_count()
 RETURNS TRIGGER AS $$
@@ -154,7 +208,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_friend_req_upd_time();
 /*━━━━━━━━ SAMPLE DATA ━━━━━━━━*/
 
 -- Insert sample admin user
-INSERT INTO users (id, username, email, password, "isAdmin", star) VALUES 
-('11111111-1111-1111-1111-111111111111', 'admin', 'admin@game.com', '$2b$10$placeholder_hash', TRUE, 1000);
+INSERT INTO users (id, username, email, password, "isAdmin", star, coin) VALUES 
+('11111111-1111-1111-1111-111111111111', 'admin', 'admin@game.com', '$2b$10$placeholder_hash', TRUE, 1000, 100);
 
 

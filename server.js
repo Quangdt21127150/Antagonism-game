@@ -9,6 +9,7 @@ const userRoutes = require("./routes/userRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const itemRoutes = require("./routes/itemRoutes");
 const voucherRoutes = require("./routes/voucherRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 const sequelize = require("./config/postgres");
 const path = require("path");
 
@@ -78,6 +79,7 @@ app.use("/api/matches", matchRoutes);
 app.use("/api/", userRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/vouchers", voucherRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // Default route
 app.get("/", (req, res) => {

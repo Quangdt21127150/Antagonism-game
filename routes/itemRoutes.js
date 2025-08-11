@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const Item = require("../models/Item");
+const User = require("../models/User");
+const ItemPurchase = require("../models/ItemPurchase");
 const authMiddleware = require("../middleware/authMiddleware");
+const sequelize = require("../config/postgres");
 
 // GET all items
 /**
@@ -262,6 +265,210 @@ router.delete("/:id", authMiddleware, async (req, res) => {
     res.status(200).json({ message: "Item deleted successfully" });
   } catch (error) {
     console.error("Error deleting item:", error);
+    res.status(500).json({ message: error.message || "Internal server error" });
+  }
+});
+
+// POST purchase item
+/**
+ * @swagger
+ * /api/items/{id}/purchase:
+ *   post:
+ *     summary: Purchase an item with stars to get coins
+ *     tags: [Items]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID of the item to purchase
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               quantity:
+ *                 type: integer
+ *                 description: Quantity to purchase (default 1)
+ *                 minimum: 1
+ *             required: []
+ *     responses:
+ *       200:
+ *         description: Item purchased successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 quantity:
+ *                   type: integer
+ *                 starsSpent:
+ *                   type: integer
+ *                 coinsEarned:
+ *                   type: integer
+ *                 newStarBalance:
+ *                   type: integer
+ *                 newCoinBalance:
+ *                   type: integer
+ *       400:
+ *         description: Invalid input or insufficient stars
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Item not found
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/:id/purchase", authMiddleware, async (req, res) => {
+  const itemId = req.params.id;
+  const { quantity = 1 } = req.body;
+  const userId = req.user.userId;
+
+  // Validate quantity
+  if (quantity <= 0 || !Number.isInteger(quantity)) {
+    return res
+      .status(400)
+      .json({ message: "Quantity must be a positive integer" });
+  }
+
+  const transaction = await sequelize.transaction();
+
+  try {
+    // Find item
+    const item = await Item.findByPk(itemId, { transaction });
+    if (!item) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    // Check if enough quantity available
+    if (item.number < quantity) {
+      return res.status(400).json({
+        message: `Only ${item.number} items available, requested ${quantity}`,
+      });
+    }
+
+    // Find user
+    const user = await User.findByPk(userId, { transaction });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Calculate costs and earnings
+    const totalStarsNeeded = item.price * quantity;
+    const coinsEarned = Math.floor(totalStarsNeeded * 0.1); // 10% của stars spent thành coins
+
+    // Check if user has enough stars
+    if (user.star < totalStarsNeeded) {
+      return res.status(400).json({
+        message: `Insufficient stars. Need ${totalStarsNeeded}, have ${user.star}`,
+      });
+    }
+
+    // Update user balances
+    user.star -= totalStarsNeeded;
+    user.coin += coinsEarned;
+    await user.save({ transaction });
+
+    // Update item quantity
+    item.number -= quantity;
+    await item.save({ transaction });
+
+    // Create purchase record
+    await ItemPurchase.create(
+      {
+        user_id: userId,
+        item_id: itemId,
+        quantity: quantity,
+        stars_spent: totalStarsNeeded,
+        coins_earned: coinsEarned,
+      },
+      { transaction }
+    );
+
+    await transaction.commit();
+
+    res.status(200).json({
+      message: "Item purchased successfully",
+      quantity: quantity,
+      starsSpent: totalStarsNeeded,
+      coinsEarned: coinsEarned,
+      newStarBalance: user.star,
+      newCoinBalance: user.coin,
+    });
+  } catch (error) {
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    console.error("Error purchasing item:", error);
+    res.status(500).json({ message: error.message || "Internal server error" });
+  }
+});
+
+// GET purchase history
+/**
+ * @swagger
+ * /api/items/purchases:
+ *   get:
+ *     summary: Get user's purchase history
+ *     tags: [Items]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User's purchase history
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   user_id:
+ *                     type: string
+ *                   item_id:
+ *                     type: string
+ *                   quantity:
+ *                     type: integer
+ *                   stars_spent:
+ *                     type: integer
+ *                   coins_earned:
+ *                     type: integer
+ *                   purchased_at:
+ *                     type: string
+ *                     format: date-time
+ *                   item:
+ *                     $ref: '#/components/schemas/Item'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/purchases", authMiddleware, async (req, res) => {
+  try {
+    const purchases = await ItemPurchase.findAll({
+      where: { user_id: req.user.userId },
+      include: [
+        {
+          model: Item,
+          as: "item",
+          attributes: ["id", "name", "price", "image"],
+        },
+      ],
+      order: [["purchased_at", "DESC"]],
+    });
+    res.status(200).json(purchases);
+  } catch (error) {
+    console.error("Error fetching purchase history:", error);
     res.status(500).json({ message: error.message || "Internal server error" });
   }
 });

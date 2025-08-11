@@ -98,6 +98,7 @@ const getProfile = async (id) => {
       "updated_at",
       "isAdmin",
       "star",
+      "coin",
       "elo",
       "win_count",
       "lose_count",
