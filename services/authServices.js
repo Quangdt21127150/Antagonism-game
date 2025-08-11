@@ -90,7 +90,18 @@ const logout = async (userId) => {
 
 const getProfile = async (id) => {
   const user = await User.findByPk(id, {
-    attributes: ["id", "username", "email", "created_at", "updated_at"],
+    attributes: [
+      "id",
+      "username",
+      "email",
+      "created_at",
+      "updated_at",
+      "isAdmin",
+      "star",
+      "elo",
+      "win_count",
+      "lose_count",
+    ],
   });
   if (!user) {
     throw new Error("User not found");

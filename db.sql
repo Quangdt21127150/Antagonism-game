@@ -8,6 +8,9 @@ DROP TABLE IF EXISTS "authorization"    CASCADE;
 DROP TABLE IF EXISTS rooms            CASCADE;
 DROP TABLE IF EXISTS matches          CASCADE;
 DROP TABLE IF EXISTS users            CASCADE;
+DROP TABLE IF EXISTS items            CASCADE;
+DROP TABLE IF EXISTS "Vouchers"       CASCADE;
+DROP TABLE IF EXISTS voucher_redemptions CASCADE;
 
 DROP FUNCTION IF EXISTS update_user_win_lose_count;
 DROP FUNCTION IF EXISTS trg_friend_req_upd_time;
@@ -22,7 +25,8 @@ CREATE TABLE users (
   elo        INTEGER  DEFAULT 0,
   win_count  INTEGER  DEFAULT 0,
   lose_count INTEGER  DEFAULT 0,
-  star       INTEGER  DEFAULT 0
+  star       INTEGER  DEFAULT 0,
+  "isAdmin"  BOOLEAN  DEFAULT FALSE
 );
 
 /*━━━━━━━━ MATCHES ━━━━━*/
@@ -77,6 +81,40 @@ CREATE TABLE rooms (
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+/*━━━━━━━━ ITEMS ━━━━━━━━*/
+CREATE TABLE items (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       VARCHAR(255) NOT NULL,
+  price      INTEGER NOT NULL,
+  number     INTEGER NOT NULL,
+  image      VARCHAR(255),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+/*━━━━━━━━ VOUCHERS ━━━━━━━━*/
+CREATE TABLE "Vouchers" (
+  id             SERIAL PRIMARY KEY,
+  name           VARCHAR(255) NOT NULL UNIQUE,
+  amount         INTEGER NOT NULL,
+  "validDate"    TIMESTAMP WITH TIME ZONE NOT NULL,
+  "expireDate"   TIMESTAMP WITH TIME ZONE NOT NULL,
+  "redeemedUsers" TEXT[] DEFAULT '{}',
+  "createdAt"    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  "updatedAt"    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+/*━━━━━━━━ VOUCHER REDEMPTIONS ━━━━━━━━*/
+CREATE TABLE voucher_redemptions (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  voucher_id  INTEGER NOT NULL REFERENCES "Vouchers"(id) ON DELETE CASCADE,
+  stars_added INTEGER NOT NULL,
+  redeemed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  
+  -- Prevent same user from redeeming same voucher twice
+  UNIQUE(user_id, voucher_id)
+);
+
 /*━━━━━━━━ FUNCTION & TRIGGER: update win/lose count ━*/
 CREATE OR REPLACE FUNCTION update_user_win_lose_count()
 RETURNS TRIGGER AS $$
@@ -112,3 +150,11 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER set_updated_at
 BEFORE UPDATE ON friend_requests
 FOR EACH ROW EXECUTE FUNCTION trg_friend_req_upd_time();
+
+/*━━━━━━━━ SAMPLE DATA ━━━━━━━━*/
+
+-- Insert sample admin user
+INSERT INTO users (id, username, email, password, "isAdmin", star) VALUES 
+('11111111-1111-1111-1111-111111111111', 'admin', 'admin@game.com', '$2b$10$placeholder_hash', TRUE, 1000);
+
+
