@@ -22,6 +22,10 @@ CREATE TABLE users (
   username   VARCHAR(255) NOT NULL UNIQUE,
   email      VARCHAR(255) NOT NULL UNIQUE,
   password   VARCHAR(255),
+  phone      VARCHAR(255) UNIQUE,
+  google_id  VARCHAR(255) UNIQUE,
+  facebook_id VARCHAR(255) UNIQUE,
+  full_name  VARCHAR(255) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   elo        INTEGER  DEFAULT 0,
@@ -29,7 +33,8 @@ CREATE TABLE users (
   lose_count INTEGER  DEFAULT 0,
   star       INTEGER  DEFAULT 0,
   coin       INTEGER  DEFAULT 0,
-  "isAdmin"  BOOLEAN  DEFAULT FALSE
+  "isAdmin"  BOOLEAN  DEFAULT FALSE,
+  is_banned  BOOLEAN  DEFAULT FALSE
 );
 
 /*━━━━━━━━ MATCHES ━━━━━*/

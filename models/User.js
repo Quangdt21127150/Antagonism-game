@@ -22,6 +22,25 @@ const User = sequelize.define(
     password: {
       type: DataTypes.STRING,
     },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    },
+    google_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    },
+    facebook_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    },
+    full_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -53,6 +72,10 @@ const User = sequelize.define(
     isAdmin: {
       type: DataTypes.BOOLEAN,
       defaultValue: false, // false là client, true là admin
+    },
+    is_banned: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
   },
   {

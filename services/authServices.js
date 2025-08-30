@@ -4,37 +4,89 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Authorization = require("../models/Authorization");
 
-const register = async (username, email, password) => {
-  if (!username || !email) {
-    throw { status: 400, message: "Username and email are required" };
+const register = async (
+  username,
+  email,
+  password,
+  phone,
+  confirmPassword,
+  fullname
+) => {
+  if (
+    !username ||
+    !phone ||
+    !email ||
+    !password ||
+    !confirmPassword ||
+    !fullname
+  ) {
+    throw { status: 400, message: "Vui lòng nhập đầy đủ thông tin" };
+  }
+  // Validate email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw { status: 400, message: "Email không hợp lệ (phải có dạng @...com)" };
+  }
+  // Validate phone (basic)
+  const phoneDigits = phone.replace(/\D/g, "");
+  if (phoneDigits.length < 9 || phoneDigits.length > 15) {
+    throw { status: 400, message: "Số điện thoại không hợp lệ" };
   }
 
+  if (password !== confirmPassword) {
+    throw { status: 400, message: "Mật khẩu xác nhận không khớp" };
+  }
   const existingUser = await User.findOne({
     where: {
       [Op.or]: [{ username }, { email }],
     },
   });
-  if (existingUser) throw { status: 409, message: "User already exist" };
+  if (existingUser) throw { status: 409, message: "Người dùng đã tồn tại!" };
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await User.create({
+    full_name: fullname,
     username,
+    phone,
     email,
     password: hashedPassword,
   });
-  return { message: "User registered successfully", userId: user.id };
+  return { message: "Đăng ký thành công", userId: user.id };
 };
 
-const login = async (email, password) => {
-  const user = await User.findOne({ where: { email } });
+const login = async (identifier, password) => {
+  if (!identifier || !password) {
+    throw {
+      status: 400,
+      message: "Bạn chưa nhập tên người dùng hoặc mật khẩu.",
+    };
+  }
+
+  // identifier: có thể là email, sđt hoặc username
+  let where = {};
+  if (typeof identifier === "string" && identifier.includes("@")) {
+    where = { email: identifier };
+  } else if (
+    typeof identifier === "string" &&
+    /^\+?\d{9,15}$/.test(identifier.replace(/\s/g, ""))
+  ) {
+    where = { phone: identifier };
+  } else {
+    where = { username: identifier };
+  }
+
+  const user = await User.findOne({ where });
   if (!user || !(await bcrypt.compare(password, user.password))) {
-    throw new Error("Invalid email or password");
+    throw {
+      status: 400,
+      message: "Tên người dùng hoặc mật khẩu không đúng, vui lòng thử lại.",
+    };
   }
 
   const accessToken = jwt.sign(
     { userId: user.id, email: user.email, isAdmin: user.isAdmin },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: "45m" }
   );
   const refreshToken = jwt.sign(
     { userId: user.id },
@@ -51,7 +103,7 @@ const login = async (email, password) => {
   });
 
   return {
-    message: "Login successful",
+    message: "Đăng nhập thành công.",
     accessToken,
     refreshToken,
     isAdmin: user.isAdmin,
@@ -85,7 +137,7 @@ const refreshToken = async (refreshToken) => {
 
 const logout = async (userId) => {
   await Authorization.destroy({ where: { user_id: userId } });
-  return { message: "Logged out successfully" };
+  return { message: "Đăng xuất thành công!" };
 };
 
 const getProfile = async (id) => {

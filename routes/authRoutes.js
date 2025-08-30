@@ -69,10 +69,18 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         description: User already exist
  */
 router.post("/register", async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, phone, confirmPassword, fullname } =
+    req.body;
   console.log("Registering user:", username, email);
   try {
-    const result = await authServices.register(username, email, password);
+    const result = await authServices.register(
+      username,
+      email,
+      password,
+      phone,
+      confirmPassword,
+      fullname
+    );
     res.status(201).json(result);
   } catch (error) {
     res.status(error.status || 400).json({ message: error.message });
@@ -114,9 +122,9 @@ router.post("/register", async (req, res) => {
  *         description: Invalid email or password
  */
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { username, password } = req.body;
   try {
-    const result = await authServices.login(email, password);
+    const result = await authServices.login(username, password);
     res.json(result);
   } catch (error) {
     res.status(400).json({ message: error.message });
