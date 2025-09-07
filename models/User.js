@@ -16,11 +16,11 @@ const User = sequelize.define(
     },
     email: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true, // Cho phép null
       unique: true,
     },
     password: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT, // Thay đổi từ STRING thành TEXT
     },
     phone: {
       type: DataTypes.STRING,
@@ -36,6 +36,10 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
       unique: true,
+    },
+    avatar_url: {
+      type: DataTypes.TEXT, // Thay đổi từ STRING thành TEXT
+      allowNull: true,
     },
     full_name: {
       type: DataTypes.STRING,
@@ -53,13 +57,21 @@ const User = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    win_count: {
+    total_matches: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    lose_count: {
+    wins: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
+    },
+    losses: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    win_rate: {
+      type: DataTypes.DECIMAL(5, 2),
+      defaultValue: 0.0,
     },
     star: {
       type: DataTypes.INTEGER,
@@ -76,6 +88,26 @@ const User = sequelize.define(
     is_banned: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+    },
+    last_login: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    selected_piece_skin: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    selected_board_skin: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    selected_background_skin: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    selected_effect_skin: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
   },
   {

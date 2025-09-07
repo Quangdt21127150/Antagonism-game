@@ -4,53 +4,69 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Authorization = require("../models/Authorization");
 
-const register = async (
-  username,
-  email,
-  password,
-  phone,
-  confirmPassword,
-  fullname
-) => {
-  if (
-    !username ||
-    !phone ||
-    !email ||
-    !password ||
-    !confirmPassword ||
-    !fullname
-  ) {
+const register = async (username, phone, password, confirmPassword) => {
+  // Validate required fields
+  if (!username || !phone || !password || !confirmPassword) {
     throw { status: 400, message: "Vui lòng nhập đầy đủ thông tin" };
   }
-  // Validate email
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    throw { status: 400, message: "Email không hợp lệ (phải có dạng @...com)" };
-  }
-  // Validate phone (basic)
-  const phoneDigits = phone.replace(/\D/g, "");
-  if (phoneDigits.length < 9 || phoneDigits.length > 15) {
-    throw { status: 400, message: "Số điện thoại không hợp lệ" };
+
+  // Validate username length (4-16 characters)
+  if (username.length < 4 || username.length > 16) {
+    throw {
+      status: 400,
+      message: "Tên đăng nhập phải từ 4 đến 16 ký tự",
+    };
   }
 
+  // Validate phone (must start with 0 and have exactly 10 digits)
+  const phoneRegex = /^0\d{9}$/;
+  if (!phoneRegex.test(phone)) {
+    throw {
+      status: 400,
+      message:
+        "Số điện thoại không hợp lệ (phải bắt đầu bằng 0 và có đúng 10 số)",
+    };
+  }
+
+  // Validate password length (8-16 characters)
+  if (password.length < 8 || password.length > 16) {
+    throw {
+      status: 400,
+      message: "Mật khẩu phải từ 8 đến 16 ký tự",
+    };
+  }
+
+  // Validate password confirmation
   if (password !== confirmPassword) {
     throw { status: 400, message: "Mật khẩu xác nhận không khớp" };
   }
+
+  // Check for duplicate username, email, or phone
   const existingUser = await User.findOne({
     where: {
-      [Op.or]: [{ username }, { email }],
+      [Op.or]: [{ username }, { phone }],
     },
   });
-  if (existingUser) throw { status: 409, message: "Người dùng đã tồn tại!" };
+  if (existingUser) {
+    if (existingUser.username === username) {
+      throw { status: 409, message: "Tên người dùng đã tồn tại" };
+    }
+    if (existingUser.phone === phone) {
+      throw { status: 409, message: "Số điện thoại đã được sử dụng" };
+    }
 
+    throw { status: 409, message: "Tài khoản đã tồn tại" };
+  }
+
+  // Hash password and create user
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await User.create({
-    full_name: fullname,
+    full_name: username, // Sử dụng username làm full_name nếu không có trường full_name riêng
     username,
     phone,
-    email,
     password: hashedPassword,
   });
+
   return { message: "Đăng ký thành công", userId: user.id };
 };
 
@@ -86,7 +102,7 @@ const login = async (identifier, password) => {
   const accessToken = jwt.sign(
     { userId: user.id, email: user.email, isAdmin: user.isAdmin },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: "45m" }
+    { expiresIn: "1d" }
   );
   const refreshToken = jwt.sign(
     { userId: user.id },
@@ -152,8 +168,8 @@ const getProfile = async (id) => {
       "star",
       "coin",
       "elo",
-      "win_count",
-      "lose_count",
+      "win",
+      "lose",
     ],
   });
   if (!user) {

@@ -4,6 +4,9 @@ const cors = require("cors");
 const swaggerJsDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const authRoutes = require("./routes/authRoutes");
+const passport = require("./config/passport");
+const session = require("express-session");
+
 const roomRoutes = require("./routes/roomRoutes");
 const userRoutes = require("./routes/userRoutes");
 const matchRoutes = require("./routes/matchRoutes");
@@ -27,6 +30,15 @@ app.use(
     allowedHeaders: "Content-Type, Authorization",
   })
 );
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-secret-key",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+app.use(passport.initialize());
 
 // Connect to PostgreSQL
 sequelize

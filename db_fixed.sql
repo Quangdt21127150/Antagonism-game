@@ -21,7 +21,7 @@ DROP FUNCTION IF EXISTS trg_friend_req_upd_time CASCADE;
 CREATE TABLE users (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username   VARCHAR(255) NOT NULL UNIQUE,
-  email      VARCHAR(255) UNIQUE, -- Cho phép NULL
+  email      VARCHAR(255) NOT NULL UNIQUE,
   password   TEXT, -- TEXT để chứa password dài (bcrypt hash)
   phone      VARCHAR(255) UNIQUE,
   google_id  VARCHAR(255) UNIQUE,

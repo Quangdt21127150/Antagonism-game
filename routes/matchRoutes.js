@@ -83,6 +83,54 @@ router.post("/", authMiddleware, async (req, res) => {
 
 /**
  * @swagger
+ * /api/matches/{id}/start:
+ *   post:
+ *     summary: Start a match
+ *     tags: [Matches]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the match to start
+ *     responses:
+ *       200:
+ *         description: Match started successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 matchId:
+ *                   type: string
+ *                 startedAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Match cannot be started (wrong status, missing player, etc.)
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Match not found
+ */
+router.post("/:id/start", authMiddleware, async (req, res) => {
+  const matchId = req.params.id;
+  try {
+    const result = await matchServices.startMatch(matchId);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error starting match:", error);
+    res.status(error.status || 400).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
  * /api/matches:
  *   get:
  *     summary: Get matches that user joined

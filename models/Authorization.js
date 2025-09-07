@@ -11,15 +11,15 @@ const Authorization = sequelize.define(
       primaryKey: true,
     },
     user_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID, // Sửa từ STRING thành UUID
       allowNull: false,
       unique: true,
     },
     access_token: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT, // Thay đổi từ STRING thành TEXT
     },
     refresh_token: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT, // Thay đổi từ STRING thành TEXT
     },
     created_at: {
       type: DataTypes.DATE,

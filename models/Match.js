@@ -39,6 +39,30 @@ const Match = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
+    white_elo_before: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    black_elo_before: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    white_elo_after: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    black_elo_after: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    started_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    completed_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: "matches",
