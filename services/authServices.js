@@ -169,7 +169,7 @@ const getProfile = async (id) => {
       "coin",
       "elo",
       "wins",
-      "loses",
+      "losses",
     ],
   });
   if (!user) {
