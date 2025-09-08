@@ -4,25 +4,14 @@ const FacebookStrategy = require("passport-facebook").Strategy;
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const Authorization = require("../models/Authorization");
-function getOriginFromEnv(raw) {
-  try {
-    const u = new URL(raw);
-    return `${u.protocol}//${u.host}`; // bỏ sạch path/query/hash
-  } catch {
-    throw new Error(`Invalid SERVER_URL: ${raw}`);
-  }
-}
 
-const ORIGIN = getOriginFromEnv(process.env.SERVER_URL);
-const CALLBACK_BASE = `${ORIGIN}/api/users/auth`;
 // Google OAuth Strategy
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${CALLBACK_BASE}/google/callback`,
-      proxy: true,
+      callbackURL: "/api/users/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -170,9 +159,8 @@ passport.use(
     {
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: `${CALLBACK_BASE}/facebook/callback`,
+      callbackURL: "/api/users/auth/facebook/callback",
       profileFields: ["id", "displayName", "photos", "email"], // Thêm email
-      proxy: true,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
