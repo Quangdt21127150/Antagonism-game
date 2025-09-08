@@ -168,8 +168,8 @@ const getProfile = async (id) => {
       "star",
       "coin",
       "elo",
-      "win",
-      "lose",
+      "wins",
+      "losses",
     ],
   });
   if (!user) {
