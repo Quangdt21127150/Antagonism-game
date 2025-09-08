@@ -37,6 +37,7 @@ app.use(
     saveUninitialized: false,
   })
 );
+app.set("trust proxy", 1);
 
 app.use(passport.initialize());
 
@@ -97,7 +98,6 @@ app.use("/api/payment", paymentRoutes);
 app.get("/", (req, res) => {
   res.send("Welcome to Antagonism Game Server");
 });
-
 // 404 middleware
 app.use((req, res, next) => {
   res.status(404).json({ message: "Route not found" });
