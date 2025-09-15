@@ -1,27 +1,41 @@
+// ==== server.js ====
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const swaggerJsDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
-const authRoutes = require("./routes/authRoutes");
-const passport = require("./config/passport");
 const session = require("express-session");
-
+const passport = require("./config/passport");
+const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
-const userRoutes = require("./routes/userRoutes");
 const matchRoutes = require("./routes/matchRoutes");
-const itemRoutes = require("./routes/itemRoutes");
-const voucherRoutes = require("./routes/voucherRoutes");
+const packageRoutes = require("./routes/packageRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const codeRoutes = require("./routes/codeRoutes");
+const matchmakingRoutes = require("./routes/matchmakingRoutes");
+const leaderboardRoutes = require("./routes/leaderboardRoutes");
+
+// Admin routes
+const adminAuthRoutes = require("./routes/admin/authRoutes");
+const adminUserRoutes = require("./routes/admin/userRoutes");
+const adminSkinRoutes = require("./routes/admin/skinRoutes");
+const adminTransactionRoutes = require("./routes/admin/transactionRoutes");
+const adminCodeRoutes = require("./routes/admin/codeRoutes");
+const adminReportRoutes = require("./routes/admin/reportRoutes");
+
 const sequelize = require("./config/postgres");
 const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
+const gameService = require("./services/gameServices");
+const socketAuthMiddleware = require("./middleware/socketMiddleware");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Serve static files from public directory (e.g., for favicon.ico)
+// Serve static files from public directory
 app.use(express.static(path.join(__dirname, "public")));
-
 app.use(express.json());
 app.use(
   cors({
@@ -30,6 +44,8 @@ app.use(
     allowedHeaders: "Content-Type, Authorization",
   })
 );
+
+// Passport middleware
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key",
@@ -37,15 +53,8 @@ app.use(
     saveUninitialized: false,
   })
 );
-app.set("trust proxy", 1);
 
 app.use(passport.initialize());
-
-// Connect to PostgreSQL
-sequelize
-  .authenticate()
-  .then(() => console.log("PostgreSQL connected"))
-  .catch((err) => console.error("PostgreSQL connection error:", err));
 
 // Swagger configuration
 const swaggerOptions = {
@@ -54,7 +63,7 @@ const swaggerOptions = {
     info: {
       title: "Game API",
       version: "1.0.0",
-      description: "API for managing users, friends, and items",
+      description: "API for managing users and friends",
     },
     servers: [
       { url: process.env.BASE_URL || "https://antagonism-game.vercel.app" },
@@ -85,24 +94,51 @@ app.use(
   })
 );
 
-// API routes
+// Routes
 app.use("/api/users", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/matches", matchRoutes);
-app.use("/api/", userRoutes);
-app.use("/api/items", itemRoutes);
-app.use("/api/vouchers", voucherRoutes);
-app.use("/api/payment", paymentRoutes);
+app.use("/api/packages", packageRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/codes", codeRoutes);
+app.use("/api/matchmaking", matchmakingRoutes);
+app.use("/api", leaderboardRoutes);
 
-// Default route
-app.get("/", (req, res) => {
-  res.send("Welcome to Antagonism Game Server");
-});
-// 404 middleware
-app.use((req, res, next) => {
-  res.status(404).json({ message: "Route not found" });
+// Admin routes
+app.use("/api/admin/auth", adminAuthRoutes);
+app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/admin/skins", adminSkinRoutes);
+app.use("/api/admin/transactions", adminTransactionRoutes);
+app.use("/api/admin/codes", adminCodeRoutes);
+app.use("/api/admin/reports", adminReportRoutes);
+
+app.get("/", (req, res) => res.send("Welcome to Antagonism Game Server"));
+app.use((req, res) => res.status(404).json({ message: "Route not found" }));
+
+// HTTP + Socket.IO
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+io.use(socketAuthMiddleware);
+
+io.on("connection", (socket) => {
+  console.log(`✅ Socket connected: ${socket.id}, userId: ${socket.userId}`);
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+gameService.attachHandlers(io);
+
+// DB connection & server start
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log("✅ Database connected");
+    server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    sequelize.sync({ alter: true }).then(() => {
+      console.log("✅ DB synced with alter!");
+    });
+  })
+  .catch((err) => {
+    console.error("❌ DB connection error:", err);
+    process.exit(1);
+  });
 
 module.exports = app;

@@ -55,6 +55,10 @@ const Match = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
     started_at: {
       type: DataTypes.DATE,
       allowNull: true,

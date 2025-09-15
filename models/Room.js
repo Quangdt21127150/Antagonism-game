@@ -27,6 +27,13 @@ const Room = sequelize.define(
         key: "id",
       },
     },
+    password: {
+      type: DataTypes.STRING,
+    },
+    time_limit: {
+      type: DataTypes.INTEGER, // optional time limit per move or match
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

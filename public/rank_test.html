@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Rank System Test - CosmosChess</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .rank-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin: 10px 0;
+      }
+      .rank-card {
+        border: 1px solid #ccc;
+        padding: 10px;
+        border-radius: 5px;
+        background: #f9f9f9;
+      }
+      input,
+      select {
+        margin: 5px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        margin: 5px;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+      .btn-warning {
+        background: #ffc107;
+        color: black;
+      }
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+      .btn-info {
+        background: #17a2b8;
+        color: white;
+      }
+
+      pre {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        max-height: 400px;
+        overflow: auto;
+        border: 1px solid #e9ecef;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .status.info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      .status.warning {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎯 Rank System Test - CosmosChess</h1>
+
+      <!-- Connection Section -->
+      <div class="section">
+        <h3>🔌 Kết nối</h3>
+        <label
+          >JWT Token:
+          <input
+            id="tokenInput"
+            size="80"
+            placeholder="Nhập JWT token..." /></label
+        ><br />
+        <label
+          >User ID:
+          <input
+            id="userIdInput"
+            size="50"
+            placeholder="Nhập User ID..." /></label
+        ><br />
+        <button class="btn-primary" onclick="connect()">🔌 Kết nối</button>
+        <button class="btn-danger" onclick="disconnect()">
+          ❌ Ngắt kết nối
+        </button>
+        <div id="connectionStatus"></div>
+      </div>
+
+      <!-- User Info Section -->
+      <div class="section">
+        <h3>👤 Thông tin người chơi</h3>
+        <button class="btn-info" onclick="getUserInfo()">
+          📊 Lấy thông tin
+        </button>
+        <div id="userInfo"></div>
+      </div>
+
+      <!-- Rank System Info -->
+      <div class="section">
+        <h3>🏆 Hệ thống Rank</h3>
+        <div class="rank-info">
+          <div class="rank-card">
+            <strong>Cấp 1 - Nam Tước</strong><br />
+            ELO: 0-500<br />
+            Lệ phí: 1 gem<br />
+            Điều kiện: 10+ trận, 60% thắng
+          </div>
+          <div class="rank-card">
+            <strong>Cấp 2 - Tử Tước</strong><br />
+            ELO: 501-1100<br />
+            Lệ phí: 2 gem<br />
+            Điều kiện: 20+ trận, 60% thắng
+          </div>
+          <div class="rank-card">
+            <strong>Cấp 3 - Bà Tước</strong><br />
+            ELO: 1101-1500<br />
+            Lệ phí: 4 gem<br />
+            Điều kiện: 40+ trận, 60% thắng
+          </div>
+          <div class="rank-card">
+            <strong>Cấp 4 - Hầu Tước</strong><br />
+            ELO: 1501-2100<br />
+            Lệ phí: 8 gem<br />
+            Điều kiện: 80+ trận, 60% thắng
+          </div>
+          <div class="rank-card">
+            <strong>Cấp 5 - Công Tước</strong><br />
+            ELO: 2101-2900<br />
+            Lệ phí: 16 gem<br />
+            Điều kiện: 160+ trận, 60% thắng
+          </div>
+          <div class="rank-card">
+            <strong>Cấp 6 - Vương Tước</strong><br />
+            ELO: 2901-4000<br />
+            Lệ phí: 32 gem<br />
+            Điều kiện: 320+ trận, 60% thắng
+          </div>
+          <div class="rank-card">
+            <strong>Cấp 7 - Hoàng Đế</strong><br />
+            ELO: 4000+<br />
+            Lệ phí: 64 gem<br />
+            Điều kiện: 640+ trận, 60% thắng
+          </div>
+        </div>
+      </div>
+
+      <!-- Match Finding Test -->
+      <div class="section">
+        <h3>🎯 Test tìm trận</h3>
+        <label
+          >Thời gian chờ (phút):
+          <input
+            id="waitTimeInput"
+            type="number"
+            value="0"
+            min="0"
+            step="0.5" /></label
+        ><br />
+        <button class="btn-success" onclick="findMatch()">🎯 Tìm trận</button>
+        <button class="btn-warning" onclick="cancelFindMatch()">
+          ⏹️ Hủy tìm
+        </button>
+        <button class="btn-danger" onclick="resign()">🛑 Đầu hàng</button>
+        <div id="matchStatus"></div>
+      </div>
+
+      <!-- Test Cases -->
+      <div class="section">
+        <h3>🧪 Test Cases</h3>
+        <button class="btn-info" onclick="testRankCalculation()">
+          📊 Test tính rank
+        </button>
+        <button class="btn-info" onclick="testEloRange()">
+          🎯 Test khoảng ELO
+        </button>
+        <button class="btn-info" onclick="testRankFee()">💰 Test lệ phí</button>
+        <button class="btn-info" onclick="testHiddenPromotion()">
+          ⭐ Test điều kiện ẩn
+        </button>
+        <div id="testResults"></div>
+      </div>
+
+      <!-- Log -->
+      <div class="section">
+        <h3>📝 Log</h3>
+        <pre id="log"></pre>
+      </div>
+    </div>
+
+    <script>
+      let socket,
+        userId,
+        currentUser = null;
+      let isFindingMatch = false;
+
+      function log(...args) {
+        const msg = args
+          .map((a) => (typeof a === "object" ? JSON.stringify(a, null, 2) : a))
+          .join(" ");
+        const timestamp = new Date().toLocaleTimeString();
+        document.getElementById("log").textContent += `\n[${timestamp}] ${msg}`;
+        console.log(...args);
+      }
+
+      function showStatus(elementId, message, type = "info") {
+        const element = document.getElementById(elementId);
+        element.innerHTML = `<div class="status ${type}">${message}</div>`;
+      }
+
+      function connect() {
+        const token = document.getElementById("tokenInput").value;
+        userId = document.getElementById("userIdInput").value;
+
+        if (!token || !userId) {
+          showStatus(
+            "connectionStatus",
+            "❌ Vui lòng nhập JWT token và User ID",
+            "error"
+          );
+          return;
+        }
+
+        socket = io("http://localhost:3000", { auth: { token } });
+
+        socket.on("connect", () => {
+          log("✅ Đã kết nối:", socket.id);
+          showStatus(
+            "connectionStatus",
+            `✅ Đã kết nối thành công - Socket ID: ${socket.id}`,
+            "success"
+          );
+        });
+
+        socket.on("disconnect", () => {
+          log("❌ Đã ngắt kết nối");
+          showStatus("connectionStatus", "❌ Đã ngắt kết nối", "error");
+        });
+
+        socket.on("connect_error", (err) => {
+          log("❗ Lỗi kết nối:", err.message);
+          showStatus(
+            "connectionStatus",
+            `❗ Lỗi kết nối: ${err.message}`,
+            "error"
+          );
+        });
+
+        socket.on("match_found", (data) => {
+          log("🎯 Đã tìm thấy trận đấu:", data);
+          showStatus(
+            "matchStatus",
+            `🎯 Đã tìm thấy trận đấu! Match ID: ${data.matchId}`,
+            "success"
+          );
+          isFindingMatch = false;
+        });
+
+        socket.on("start_turn", (data) => {
+          log(`🔁 Turn: ${data.turn}`);
+        });
+
+        socket.on("opponent_moved", (data) => {
+          log("📦 Opponent moved:", data);
+        });
+
+        socket.on("piece_captured", (data) => {
+          log("💥 Piece captured:", data);
+        });
+
+        socket.on("game_over", (data) => {
+          log("🏁 Game Over!", data);
+          showStatus(
+            "matchStatus",
+            `🏁 Game Over! Winner: ${data.winner}`,
+            "success"
+          );
+        });
+
+        socket.on("error", (err) => {
+          const message = typeof err === "string" ? err : err.message;
+          log("⚠️ Lỗi:", message);
+          showStatus("matchStatus", `⚠️ Lỗi: ${message}`, "error");
+          isFindingMatch = false;
+        });
+      }
+
+      function disconnect() {
+        if (socket && socket.connected) {
+          socket.disconnect();
+          log("🧹 Đã ngắt kết nối thủ công");
+        } else {
+          log("⚠️ Không có kết nối để ngắt");
+        }
+      }
+
+      async function getUserInfo() {
+        if (!userId) {
+          showStatus("userInfo", "❌ Vui lòng nhập User ID", "error");
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `http://localhost:3000/api/users/profile`,
+            {
+              headers: {
+                Authorization: `Bearer ${
+                  document.getElementById("tokenInput").value
+                }`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            currentUser = data; // API trả về trực tiếp user object
+
+            const rankLevel = getRankLevel(currentUser.elo);
+            const rankFee = getRankFee(currentUser.elo);
+
+            const userInfoHtml = `
+               <div class="rank-card">
+                 <strong>Thông tin người chơi:</strong><br>
+                 Username: ${currentUser.username}<br>
+                 ELO: ${currentUser.elo}<br>
+                 Cấp độ: ${rankLevel}<br>
+                 Lệ phí: ${rankFee} gem<br>
+                 Gem hiện tại: ${currentUser.gem}<br>
+                 Tổng trận: ${currentUser.total_matches || 0}<br>
+                 Tỉ lệ thắng: ${((currentUser.win_rate || 0) * 100).toFixed(
+                   1
+                 )}%<br>
+                 <strong>Trạng thái:</strong> ${
+                   currentUser.gem >= rankFee
+                     ? "✅ Đủ gem để chơi"
+                     : "❌ Thiếu gem"
+                 }
+               </div>
+             `;
+
+            document.getElementById("userInfo").innerHTML = userInfoHtml;
+            log("📊 Thông tin người chơi:", data);
+          } else {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP ${response.status}`);
+          }
+        } catch (error) {
+          log("❌ Lỗi lấy thông tin:", error.message);
+          showStatus("userInfo", `❌ Lỗi: ${error.message}`, "error");
+        }
+      }
+
+      function findMatch() {
+        if (!socket || !socket.connected) {
+          showStatus("matchStatus", "❌ Chưa kết nối", "error");
+          return;
+        }
+
+        if (!currentUser) {
+          showStatus(
+            "matchStatus",
+            "❌ Vui lòng lấy thông tin người chơi trước",
+            "error"
+          );
+          return;
+        }
+
+        const waitTime = parseFloat(
+          document.getElementById("waitTimeInput").value
+        );
+        const rankLevel = getRankLevel(currentUser.elo);
+        const rankFee = getRankFee(currentUser.elo);
+
+        if (currentUser.gem < rankFee) {
+          showStatus(
+            "matchStatus",
+            `❌ Không đủ gem! Cần ${rankFee} gem cho cấp ${rankLevel}`,
+            "error"
+          );
+          return;
+        }
+
+        socket.emit("find_match", { userId });
+        isFindingMatch = true;
+
+        showStatus(
+          "matchStatus",
+          `🔍 Đang tìm trận... (Cấp ${rankLevel}, Lệ phí: ${rankFee} gem)`,
+          "info"
+        );
+        log(
+          `🔍 Bắt đầu tìm trận - User: ${userId}, Cấp: ${rankLevel}, Lệ phí: ${rankFee} gem`
+        );
+      }
+
+      function cancelFindMatch() {
+        if (socket && socket.connected) {
+          socket.emit("cancel_find_match", { userId });
+          isFindingMatch = false;
+          showStatus("matchStatus", "⏹️ Đã hủy tìm trận", "warning");
+          log("⏹️ Đã hủy tìm trận");
+        }
+      }
+
+      function resign() {
+        if (!socket || !socket.connected) {
+          showStatus("matchStatus", "❌ Chưa kết nối", "error");
+          return;
+        }
+
+        socket.emit("resign", { userId });
+        showStatus("matchStatus", "🛑 Đã đầu hàng", "warning");
+        log("🛑 Đã đầu hàng");
+      }
+
+      // Helper functions for testing
+      function getRankLevel(elo) {
+        const ranks = [
+          { level: 1, minElo: 0, maxElo: 500 },
+          { level: 2, minElo: 501, maxElo: 1100 },
+          { level: 3, minElo: 1101, maxElo: 1500 },
+          { level: 4, minElo: 1501, maxElo: 2100 },
+          { level: 5, minElo: 2101, maxElo: 2900 },
+          { level: 6, minElo: 2901, maxElo: 4000 },
+          { level: 7, minElo: 4001, maxElo: Infinity },
+        ];
+        return (
+          ranks.find((r) => elo >= r.minElo && elo <= r.maxElo)?.level || 1
+        );
+      }
+
+      function getRankFee(elo) {
+        const ranks = [
+          { level: 1, minElo: 0, maxElo: 500, fee: 1 },
+          { level: 2, minElo: 501, maxElo: 1100, fee: 2 },
+          { level: 3, minElo: 1101, maxElo: 1500, fee: 4 },
+          { level: 4, minElo: 1501, maxElo: 2100, fee: 8 },
+          { level: 5, minElo: 2101, maxElo: 2900, fee: 16 },
+          { level: 6, minElo: 2901, maxElo: 4000, fee: 32 },
+          { level: 7, minElo: 4001, maxElo: Infinity, fee: 64 },
+        ];
+        return ranks.find((r) => elo >= r.minElo && elo <= r.maxElo)?.fee || 1;
+      }
+
+      function testRankCalculation() {
+        const testCases = [
+          { elo: 0, expectedLevel: 1 },
+          { elo: 500, expectedLevel: 1 },
+          { elo: 501, expectedLevel: 2 },
+          { elo: 1100, expectedLevel: 2 },
+          { elo: 1101, expectedLevel: 3 },
+          { elo: 1500, expectedLevel: 3 },
+          { elo: 1501, expectedLevel: 4 },
+          { elo: 2100, expectedLevel: 4 },
+          { elo: 2101, expectedLevel: 5 },
+          { elo: 2900, expectedLevel: 5 },
+          { elo: 2901, expectedLevel: 6 },
+          { elo: 4000, expectedLevel: 6 },
+          { elo: 4001, expectedLevel: 7 },
+          { elo: 5000, expectedLevel: 7 },
+        ];
+
+        let results = "📊 Test tính rank:\n";
+        testCases.forEach((test) => {
+          const actualLevel = getRankLevel(test.elo);
+          const status = actualLevel === test.expectedLevel ? "✅" : "❌";
+          results += `${status} ELO ${test.elo} -> Cấp ${actualLevel} (mong đợi: ${test.expectedLevel})\n`;
+        });
+
+        log(results);
+        showStatus("testResults", results.replace(/\n/g, "<br>"), "info");
+      }
+
+      function testEloRange() {
+        const testCases = [
+          { level: 1, waitMinutes: 0, expectedRange: [0, 500] },
+          { level: 1, waitMinutes: 1.5, expectedRange: [0, 1100] },
+          { level: 1, waitMinutes: 5, expectedRange: [0, 1500] },
+          { level: 4, waitMinutes: 0, expectedRange: [1501, 2100] },
+          { level: 4, waitMinutes: 1.5, expectedRange: [1101, 2900] },
+          { level: 4, waitMinutes: 5, expectedRange: [501, 4000] },
+          { level: 7, waitMinutes: 0, expectedRange: [4001, 3000] },
+          { level: 7, waitMinutes: 1.5, expectedRange: [2901, 3000] },
+          { level: 7, waitMinutes: 5, expectedRange: [2101, 3000] },
+        ];
+
+        let results = "🎯 Test khoảng ELO:\n";
+        testCases.forEach((test) => {
+          // Simulate getEloRangeFromLevel logic
+          let widenLevels = 0;
+          if (test.waitMinutes >= 1.5) widenLevels = 1;
+          if (test.waitMinutes >= 5) widenLevels = 2;
+
+          const minLevel = Math.max(1, test.level - widenLevels);
+          const maxLevel = Math.min(7, test.level + widenLevels);
+
+          const ranks = [
+            { level: 1, minElo: 0, maxElo: 500 },
+            { level: 2, minElo: 501, maxElo: 1100 },
+            { level: 3, minElo: 1101, maxElo: 1500 },
+            { level: 4, minElo: 1501, maxElo: 2100 },
+            { level: 5, minElo: 2101, maxElo: 2900 },
+            { level: 6, minElo: 2901, maxElo: 4000 },
+            { level: 7, minElo: 4001, maxElo: Infinity },
+          ];
+
+          const minElo = ranks.find((r) => r.level === minLevel)?.minElo ?? 0;
+          const maxElo =
+            ranks.find((r) => r.level === maxLevel)?.maxElo ?? 3000;
+
+          const actualRange = [minElo, maxElo];
+          const status =
+            JSON.stringify(actualRange) === JSON.stringify(test.expectedRange)
+              ? "✅"
+              : "❌";
+          results += `${status} Cấp ${test.level}, chờ ${test.waitMinutes}p -> [${actualRange[0]}, ${actualRange[1]}]\n`;
+        });
+
+        log(results);
+        showStatus("testResults", results.replace(/\n/g, "<br>"), "info");
+      }
+
+      function testRankFee() {
+        const testCases = [
+          { elo: 0, expectedFee: 1 },
+          { elo: 500, expectedFee: 1 },
+          { elo: 501, expectedFee: 2 },
+          { elo: 1100, expectedFee: 2 },
+          { elo: 1101, expectedFee: 4 },
+          { elo: 1500, expectedFee: 4 },
+          { elo: 1501, expectedFee: 8 },
+          { elo: 2100, expectedFee: 8 },
+          { elo: 2101, expectedFee: 16 },
+          { elo: 2900, expectedFee: 16 },
+          { elo: 2901, expectedFee: 32 },
+          { elo: 4000, expectedFee: 32 },
+          { elo: 4001, expectedFee: 64 },
+          { elo: 5000, expectedFee: 64 },
+        ];
+
+        let results = "💰 Test lệ phí:\n";
+        testCases.forEach((test) => {
+          const actualFee = getRankFee(test.elo);
+          const status = actualFee === test.expectedFee ? "✅" : "❌";
+          results += `${status} ELO ${test.elo} -> ${actualFee} gem (mong đợi: ${test.expectedFee})\n`;
+        });
+
+        log(results);
+        showStatus("testResults", results.replace(/\n/g, "<br>"), "info");
+      }
+
+      function testHiddenPromotion() {
+        const testCases = [
+          {
+            user: { total_matches: 5, win_rate: 0.7 },
+            level: 1,
+            expected: false,
+            description: "Ít trận (5 < 10)",
+          },
+          {
+            user: { total_matches: 15, win_rate: 0.5 },
+            level: 1,
+            expected: false,
+            description: "Tỉ lệ thắng thấp (0.5 < 0.6)",
+          },
+          {
+            user: { total_matches: 15, win_rate: 0.7 },
+            level: 1,
+            expected: true,
+            description: "Đủ điều kiện lên cấp 2",
+          },
+          {
+            user: { total_matches: 25, win_rate: 0.8 },
+            level: 2,
+            expected: true,
+            description: "Đủ điều kiện lên cấp 3",
+          },
+        ];
+
+        let results = "⭐ Test điều kiện ẩn:\n";
+        testCases.forEach((test) => {
+          // Simulate checkHiddenPromotion logic
+          const nextLevel = test.level + 1;
+          const hiddenConditions = {
+            2: (user) => user.total_matches >= 10 && user.win_rate >= 0.6,
+            3: (user) => user.total_matches >= 20 && user.win_rate >= 0.6,
+            4: (user) => user.total_matches >= 40 && user.win_rate >= 0.6,
+            5: (user) => user.total_matches >= 80 && user.win_rate >= 0.6,
+            6: (user) => user.total_matches >= 160 && user.win_rate >= 0.6,
+            7: (user) => user.total_matches >= 320 && user.win_rate >= 0.6,
+          };
+
+          const condition = hiddenConditions[nextLevel];
+          const actual = condition ? condition(test.user) : false;
+          const status = actual === test.expected ? "✅" : "❌";
+          results += `${status} ${test.description} -> ${
+            actual ? "Có thể lên cấp" : "Không thể lên cấp"
+          }\n`;
+        });
+
+        log(results);
+        showStatus("testResults", results.replace(/\n/g, "<br>"), "info");
+      }
+    </script>
+  </body>
+</html>
