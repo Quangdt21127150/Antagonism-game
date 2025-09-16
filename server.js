@@ -15,6 +15,8 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const codeRoutes = require("./routes/codeRoutes");
 const matchmakingRoutes = require("./routes/matchmakingRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
+const itemRoutes = require("./routes/itemRoutes");
+const voucherRoutes = require("./routes/voucherRoutes");
 
 // Admin routes
 const adminAuthRoutes = require("./routes/admin/authRoutes");
@@ -103,6 +105,8 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/codes", codeRoutes);
 app.use("/api/matchmaking", matchmakingRoutes);
 app.use("/api", leaderboardRoutes);
+app.use("/api/items", itemRoutes);
+app.use("/api/vouchers", voucherRoutes);
 
 // Admin routes
 app.use("/api/admin/auth", adminAuthRoutes);
