@@ -109,33 +109,51 @@ class AdminReportService {
     }
   }
 
-  // Thống kê user theo level
+  getLevelFromElo(elo) {
+    if (elo < 1000) return 1;
+    if (elo < 1500) return 2;
+    if (elo < 2000) return 3;
+    return 4; // Ví dụ: Level 4 cho elo >= 2000
+  }
+
   async getUserLevelStats() {
     try {
-      const levelStats = await User.findAll({
-        attributes: [
-          "level",
-          [
-            require("sequelize").fn("COUNT", require("sequelize").col("id")),
-            "count",
-          ],
-        ],
-        group: ["level"],
-        order: [["level", "ASC"]],
+      // Thống kê số lượng user theo level (tính toán từ elo)
+      const users = await User.findAll({
+        attributes: ["id", "elo"],
       });
+
+      const levelStats = {};
+      users.forEach((user) => {
+        const level = this.getLevelFromElo(user.elo); // Gọi hàm this.getLevelFromElo
+        if (!levelStats[level]) {
+          levelStats[level] = 0;
+        }
+        levelStats[level]++;
+      });
+
+      const levelStatsArray = Object.keys(levelStats).map((level) => ({
+        level: parseInt(level),
+        count: levelStats[level],
+      }));
+
+      // Sắp xếp theo level tăng dần
+      levelStatsArray.sort((a, b) => a.level - b.level);
 
       // Top 10 user theo ELO
       const topEloUsers = await User.findAll({
-        attributes: [
-          "id",
-          "username",
-          "elo",
-          "level",
-          "total_matches",
-          "win_rate",
-        ],
+        attributes: ["id", "username", "elo", "total_matches", "win_rate"],
         order: [["elo", "DESC"]],
         limit: 10,
+      });
+
+      // Tính toán level cho từng user
+      const topEloUsersWithLevel = topEloUsers.map((user) => {
+        const userData = user.toJSON();
+        return {
+          ...userData,
+          level: this.getLevelFromElo(userData.elo), // Gọi hàm this.getLevelFromElo
+        };
       });
 
       // Top 10 user theo coin
@@ -153,8 +171,8 @@ class AdminReportService {
       });
 
       return {
-        by_level: levelStats,
-        top_by_elo: topEloUsers,
+        by_level: levelStatsArray,
+        top_by_elo: topEloUsersWithLevel,
         top_by_coin: topCoinUsers,
         top_by_gem: topGemUsers,
       };
@@ -212,7 +230,7 @@ class AdminReportService {
       // Thống kê theo type
       const typeStats = await Transaction.findAll({
         attributes: [
-          "type",
+          "transaction_type",
           [
             require("sequelize").fn("COUNT", require("sequelize").col("id")),
             "count",
@@ -227,7 +245,7 @@ class AdminReportService {
             [Op.gte]: startDate,
           },
         },
-        group: ["type"],
+        group: ["transaction_type"],
       });
 
       return {
@@ -350,7 +368,7 @@ class AdminReportService {
       // Tổng thu nhập theo loại
       const incomeByType = await Transaction.findAll({
         attributes: [
-          "type",
+          "transaction_type",
           [
             require("sequelize").fn("SUM", require("sequelize").col("amount")),
             "total_amount",
@@ -366,7 +384,7 @@ class AdminReportService {
             [Op.in]: ["topup", "purchase"],
           },
         },
-        group: ["type"],
+        group: ["transaction_type"],
       });
 
       // Tổng chi tiêu theo loại

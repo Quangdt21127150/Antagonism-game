@@ -15,11 +15,6 @@ class AdminUserService {
         whereClause.username = { [Op.iLike]: `%${filters.username}%` };
       }
 
-      // Filter theo email
-      if (filters.email) {
-        whereClause.email = { [Op.iLike]: `%${filters.email}%` };
-      }
-
       // Filter theo level - sẽ được xử lý sau khi lấy data
       // Filter theo trạng thái ban
       if (filters.is_banned !== undefined) {
@@ -31,7 +26,6 @@ class AdminUserService {
         attributes: [
           "id",
           "username",
-          "email",
           "coin",
           "gem",
           "elo",
@@ -85,7 +79,6 @@ class AdminUserService {
         attributes: [
           "id",
           "username",
-          "email",
           "coin",
           "gem",
           "elo",
@@ -249,7 +242,7 @@ class AdminUserService {
 
       // Top 10 user theo ELO
       const topEloUsers = await User.findAll({
-        attributes: ["id", "username", "elo", "level"],
+        attributes: ["id", "username", "elo"],
         order: [["elo", "DESC"]],
         limit: 10,
       });

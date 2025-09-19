@@ -39,6 +39,11 @@ const Code = sequelize.define(
       allowNull: false,
       defaultValue: true,
     },
+    code_type: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "gift",
+    },
     expires_at: {
       type: DataTypes.DATE,
       allowNull: true,

@@ -47,7 +47,7 @@ class AdminTransactionService {
           {
             model: User,
             as: "user",
-            attributes: ["id", "username", "email"],
+            attributes: ["id", "username"],
           },
         ],
         order: [["created_at", "DESC"]],
@@ -190,11 +190,11 @@ class AdminTransactionService {
         ],
       });
 
-      // Thống kê theo type
+      // Thống kê theo transaction_type
       const transactionsByType = await Transaction.findAll({
         where: whereClause,
         attributes: [
-          "type",
+          "transaction_type", // Sửa từ "type" thành "transaction_type"
           [
             require("sequelize").fn("COUNT", require("sequelize").col("id")),
             "count",
@@ -204,7 +204,7 @@ class AdminTransactionService {
             "total_amount",
           ],
         ],
-        group: ["type"],
+        group: ["transaction_type"], // Sửa từ "type" thành "transaction_type"
       });
 
       // Thống kê theo currency_type

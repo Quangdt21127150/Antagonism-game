@@ -5,12 +5,11 @@ const userService = require("../../services/admin/userService");
 
 // Lấy danh sách user
 router.get("/", adminAuth, async (req, res) => {
-  try {
+  try {   
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const filters = {
       username: req.query.username,
-      email: req.query.email,
       level: req.query.level,
       is_banned:
         req.query.is_banned !== undefined
