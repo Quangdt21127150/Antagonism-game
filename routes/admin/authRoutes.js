@@ -6,26 +6,6 @@ const authService = require("../../services/admin/authService");
 // Đăng nhập admin
 router.post("/login", async (req, res) => {
   try {
-    console.log("=== LOGIN DEBUG ===");
-    console.log("Headers:", req.headers);
-    console.log("Body:", req.body);
-    console.log("Content-Type:", req.headers["content-type"]);
-    console.log("==================");
-
-    if (!req.body) {
-      return res.status(400).json({
-        message: "Request body is empty",
-        receivedBody: req.body,
-      });
-    }
-
-    if (!req.body.username || !req.body.password) {
-      return res.status(400).json({
-        message: "Username và password là bắt buộc",
-        receivedBody: req.body,
-      });
-    }
-
     const { username, password } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
 

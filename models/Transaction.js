@@ -31,6 +31,14 @@ const Transaction = sequelize.define(
       type: DataTypes.ENUM("coin", "gem"),
       allowNull: false,
     },
+    payment_method: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    stars_to_add: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     status: {
       type: DataTypes.ENUM("pending", "success", "failed", "cancelled"),
       defaultValue: "pending",

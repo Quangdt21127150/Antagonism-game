@@ -11,7 +11,8 @@ const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const packageRoutes = require("./routes/packageRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
+const paymentRoutes = require("./routes/paymentRoutes"); //Route cũ
+const paymentsRoutes = require("./routes/paymentsRoutes"); //Route mới
 const codeRoutes = require("./routes/codeRoutes");
 const matchmakingRoutes = require("./routes/matchmakingRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
@@ -101,7 +102,8 @@ app.use("/api/users", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/packages", packageRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use("/api/payment", paymentRoutes); //Route cũ
+app.use("/api/payments", paymentsRoutes); //Route mới
 app.use("/api/codes", codeRoutes);
 app.use("/api/matchmaking", matchmakingRoutes);
 app.use("/api", leaderboardRoutes);
