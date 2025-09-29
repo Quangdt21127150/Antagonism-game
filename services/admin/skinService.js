@@ -1,5 +1,6 @@
 const Skin = require("../../models/Skin");
 const Log = require("../../models/Log");
+const fs = require("fs");
 const { Op } = require("sequelize");
 
 class AdminSkinService {
@@ -46,54 +47,47 @@ class AdminSkinService {
   }
 
   // Tạo skin mới
-  async createSkin(skinData, adminId, ipAddress) {
-    try {
-      const {
-        name,
-        type,
-        image_url,
-        price_coin,
-        price_gem,
-        description,
-        is_active,
-      } = skinData;
+  async createSkin(skinData, adminId, ipAddress, imagePath) {
+  try {
+    const { name, type, price_coin, price_gem, description, is_active } = skinData;
 
-      // Kiểm tra tên skin đã tồn tại
-      const existingSkin = await Skin.findOne({ where: { name } });
-      if (existingSkin) {
-        throw new Error("Tên skin đã tồn tại");
-      }
-
-      const skin = await Skin.create({
-        name,
-        type: type || "piece",
-        image_url,
-        price_coin: price_coin || 0,
-        price_gem: price_gem || 0,
-        description,
-        is_active: is_active !== undefined ? is_active : true,
-      });
-
-      // Ghi log
-      await Log.create({
-        admin_id: adminId,
-        action: "create_skin",
-        target_type: "skin",
-        target_id: skin.id,
-        details: JSON.stringify({
-          name: skin.name,
-          type: skin.type,
-          price_coin: skin.price_coin,
-          price_gem: skin.price_gem,
-        }),
-        ip_address: ipAddress,
-      });
-
-      return skin;
-    } catch (error) {
-      throw error;
+    // Kiểm tra tên skin đã tồn tại
+    const existingSkin = await Skin.findOne({ where: { name } });
+    if (existingSkin) {
+      throw new Error("Tên skin đã tồn tại");
     }
+
+    // Tạo skin mới
+    const skin = await Skin.create({
+      name,
+      type: type || "piece",
+      image_url: imagePath, // Đường dẫn ảnh từ Cloudinary
+      price_coin: price_coin || 0,
+      price_gem: price_gem || 0,
+      description,
+      is_active: is_active !== undefined ? is_active : true,
+    });
+
+    // Ghi log
+    await Log.create({
+      admin_id: adminId,
+      action: "create_skin",
+      target_type: "skin",
+      target_id: skin.id,
+      details: JSON.stringify({
+        name: skin.name,
+        type: skin.type,
+        price_coin: skin.price_coin,
+        price_gem: skin.price_gem,
+      }),
+      ip_address: ipAddress,
+    });
+
+    return skin;
+  } catch (error) {
+    throw error;
   }
+}
 
   // Cập nhật skin
   async updateSkin(skinId, updates, adminId, ipAddress) {

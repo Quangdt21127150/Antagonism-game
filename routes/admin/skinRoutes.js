@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const adminAuth = require("../../middleware/adminAuth");
 const skinService = require("../../services/admin/skinService");
+const upload = require("../../middleware/uploadMiddleware");
 
 // Lấy danh sách skin
 router.get("/", adminAuth, async (req, res) => {
@@ -25,14 +26,18 @@ router.get("/", adminAuth, async (req, res) => {
 });
 
 // Tạo skin mới
-router.post("/", adminAuth, async (req, res) => {
+router.post("/", adminAuth, upload.single("image_url"), async (req, res) => {
   try {
     const ipAddress = req.ip || req.connection.remoteAddress;
+
+    // Truyền đường dẫn ảnh từ Cloudinary vào hàm createSkin
     const skin = await skinService.createSkin(
       req.body,
       req.admin.id,
-      ipAddress
+      ipAddress,
+      req.file.path // Đường dẫn ảnh từ Cloudinary
     );
+
     res.json({ skin });
   } catch (error) {
     res.status(400).json({ message: error.message });
