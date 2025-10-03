@@ -22,7 +22,6 @@ const voucherRoutes = require("./routes/voucherRoutes");
 // Admin routes
 const adminAuthRoutes = require("./routes/admin/authRoutes");
 const adminUserRoutes = require("./routes/admin/userRoutes");
-const adminSkinRoutes = require("./routes/admin/skinRoutes");
 const adminTransactionRoutes = require("./routes/admin/transactionRoutes");
 const adminCodeRoutes = require("./routes/admin/codeRoutes");
 const adminReportRoutes = require("./routes/admin/reportRoutes");
@@ -113,7 +112,6 @@ app.use("/api/vouchers", voucherRoutes);
 // Admin routes
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/users", adminUserRoutes);
-app.use("/api/admin/skins", adminSkinRoutes);
 app.use("/api/admin/transactions", adminTransactionRoutes);
 app.use("/api/admin/codes", adminCodeRoutes);
 app.use("/api/admin/reports", adminReportRoutes);
@@ -131,6 +129,9 @@ io.on("connection", (socket) => {
 });
 
 gameService.attachHandlers(io);
+
+//Quan hệ giữa các bảng
+require("./config/assosiation");
 
 // DB connection & server start
 sequelize

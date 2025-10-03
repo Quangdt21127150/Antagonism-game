@@ -1,7 +1,6 @@
 const User = require("../../models/User");
 const Transaction = require("../../models/Transaction");
 const Code = require("../../models/Code");
-const Skin = require("../../models/Skin");
 const Match = require("../../models/Match");
 const Log = require("../../models/Log");
 const { Op } = require("sequelize");
@@ -61,10 +60,6 @@ class AdminReportService {
         ],
       });
 
-      // Thống kê skin
-      const totalSkins = await Skin.count();
-      const activeSkins = await Skin.count({ where: { is_active: true } });
-
       // Thống kê match
       const totalMatches = await Match.count();
       const todayMatches = await Match.count({
@@ -94,10 +89,6 @@ class AdminReportService {
           total: totalCodes,
           active: activeCodes,
           total_uses: parseInt(totalCodeUses.dataValues.total_uses) || 0,
-        },
-        skins: {
-          total: totalSkins,
-          active: activeSkins,
         },
         matches: {
           total: totalMatches,
@@ -496,13 +487,6 @@ class AdminReportService {
 
         case "codes":
           data = await Code.findAll({
-            where: filters,
-            order: [["created_at", "DESC"]],
-          });
-          break;
-
-        case "skins":
-          data = await Skin.findAll({
             where: filters,
             order: [["created_at", "DESC"]],
           });

@@ -5,6 +5,9 @@ const User = require("../models/User");
 const ItemPurchase = require("../models/ItemPurchase");
 const authMiddleware = require("../middleware/authMiddleware");
 const sequelize = require("../config/postgres");
+const upload = require("../middleware/uploadMiddleware");
+const adminAuth = require("../middleware/adminAuth");
+const itemService = require("../services/admin/itemService");
 
 // GET all items
 /**
@@ -117,22 +120,19 @@ router.get("/", authMiddleware, async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.post("/", authMiddleware, async (req, res) => {
-  const { name, price, number, image } = req.body;
-  if (!req.user.isAdmin) {
-    return res.status(403).json({ message: "Admin access required" });
-  }
-  if (!name || !price || !number) {
-    return res
-      .status(400)
-      .json({ message: "Name, price, and quantity are required" });
-  }
+router.post("/", adminAuth, upload.single("image"), async (req, res) => {
   try {
-    const item = await Item.create({ name, price, number, image });
+    const imagePath = req.file?.path;
+
+    const item = await itemService.createItem(
+      req.body,
+      req.admin.id,
+      imagePath
+    );
+
     res.status(201).json(item);
   } catch (error) {
-    console.error("Error creating item:", error);
-    res.status(500).json({ message: error.message || "Internal server error" });
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -191,27 +191,20 @@ router.post("/", authMiddleware, async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.put("/:id", authMiddleware, async (req, res) => {
-  const itemId = req.params.id;
-  const { name, price, number, image } = req.body;
-  if (!req.user.isAdmin) {
-    return res.status(403).json({ message: "Admin access required" });
-  }
-  if (!name || !price || !number) {
-    return res
-      .status(400)
-      .json({ message: "Name, price, and quantity are required" });
-  }
+router.put("/:id", adminAuth, upload.single("image"), async (req, res) => {
   try {
-    const item = await Item.findByPk(itemId);
-    if (!item) {
-      return res.status(404).json({ message: "Item not found" });
-    }
-    await item.update({ name, price, number, image });
-    res.status(200).json(item);
+    const itemId = req.params.id;
+    const imagePath = req.file?.path;
+
+    const updatedItem = await itemService.updateItem(
+      itemId,
+      req.body,
+      imagePath
+    );
+
+    res.status(200).json(updatedItem);
   } catch (error) {
-    console.error("Error updating item:", error);
-    res.status(500).json({ message: error.message || "Internal server error" });
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -251,21 +244,15 @@ router.put("/:id", authMiddleware, async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.delete("/:id", authMiddleware, async (req, res) => {
-  const itemId = req.params.id;
-  if (!req.user.isAdmin) {
-    return res.status(403).json({ message: "Admin access required" });
-  }
+router.delete("/:id", adminAuth, async (req, res) => {
   try {
-    const item = await Item.findByPk(itemId);
-    if (!item) {
-      return res.status(404).json({ message: "Item not found" });
-    }
-    await item.destroy();
+    const item_id = req.params.id;
+
+    await itemService.deleteItem(item_id);
+
     res.status(200).json({ message: "Item deleted successfully" });
   } catch (error) {
-    console.error("Error deleting item:", error);
-    res.status(500).json({ message: error.message || "Internal server error" });
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -332,83 +319,15 @@ router.post("/:id/purchase", authMiddleware, async (req, res) => {
   const { quantity = 1 } = req.body;
   const userId = req.user.userId;
 
-  // Validate quantity
-  if (quantity <= 0 || !Number.isInteger(quantity)) {
-    return res
-      .status(400)
-      .json({ message: "Quantity must be a positive integer" });
-  }
-
-  const transaction = await sequelize.transaction();
-
   try {
-    // Find item
-    const item = await Item.findByPk(itemId, { transaction });
-    if (!item) {
-      return res.status(404).json({ message: "Item not found" });
-    }
-
-    // Check if enough quantity available
-    if (item.number < quantity) {
-      return res.status(400).json({
-        message: `Only ${item.number} items available, requested ${quantity}`,
-      });
-    }
-
-    // Find user
-    const user = await User.findByPk(userId, { transaction });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Calculate costs and earnings
-    const totalStarsNeeded = item.price * quantity;
-    const coinsEarned = Math.floor(totalStarsNeeded * 0.1); // 10% của stars spent thành coins
-
-    // Check if user has enough stars
-    if (user.star < totalStarsNeeded) {
-      return res.status(400).json({
-        message: `Insufficient stars. Need ${totalStarsNeeded}, have ${user.star}`,
-      });
-    }
-
-    // Update user balances
-    user.star -= totalStarsNeeded;
-    user.coin += coinsEarned;
-    await user.save({ transaction });
-
-    // Update item quantity
-    item.number -= quantity;
-    await item.save({ transaction });
-
-    // Create purchase record
-    await ItemPurchase.create(
-      {
-        user_id: userId,
-        item_id: itemId,
-        quantity: quantity,
-        stars_spent: totalStarsNeeded,
-        coins_earned: coinsEarned,
-      },
-      { transaction }
-    );
-
-    await transaction.commit();
+    const purchase = await itemService.purchaseItem(userId, itemId, quantity);
 
     res.status(200).json({
-      message: "Item purchased successfully",
-      quantity: quantity,
-      starsSpent: totalStarsNeeded,
-      coinsEarned: coinsEarned,
-      newStarBalance: user.star,
-      newCoinBalance: user.coin,
+      message: "Mua item thành công",
+      purchase,
     });
   } catch (error) {
-    if (!transaction.finished) {
-      await transaction.rollback();
-    }
-    console.error("Error purchasing item:", error);
-    res.status(500).json({ message: error.message || "Internal server error" });
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -455,21 +374,13 @@ router.post("/:id/purchase", authMiddleware, async (req, res) => {
  */
 router.get("/purchases", authMiddleware, async (req, res) => {
   try {
-    const purchases = await ItemPurchase.findAll({
-      where: { user_id: req.user.userId },
-      include: [
-        {
-          model: Item,
-          as: "item",
-          attributes: ["id", "name", "price", "image"],
-        },
-      ],
-      order: [["purchased_at", "DESC"]],
-    });
+    const userId = req.user.userId;
+
+    const purchases = await itemService.getPurchaseHistory(userId);
+
     res.status(200).json(purchases);
   } catch (error) {
-    console.error("Error fetching purchase history:", error);
-    res.status(500).json({ message: error.message || "Internal server error" });
+    res.status(400).json({ message: error.message });
   }
 });
 

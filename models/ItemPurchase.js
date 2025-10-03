@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/postgres");
+const Item = require("./Item");
 
 const ItemPurchase = sequelize.define(
   "ItemPurchase",
@@ -38,6 +39,10 @@ const ItemPurchase = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    is_equipped: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     purchased_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -48,5 +53,7 @@ const ItemPurchase = sequelize.define(
     timestamps: false,
   }
 );
+
+
 
 module.exports = ItemPurchase;
