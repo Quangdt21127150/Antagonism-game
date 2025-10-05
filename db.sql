@@ -56,12 +56,14 @@ CREATE TABLE "authorization" (
 );
 
 /*━━━━━━━━ MATCHES ━━━━━*/
+-- Create ENUM type for match status
+CREATE TYPE match_status AS ENUM ('waiting', 'ongoing', 'win', 'draw', 'lose');
+
 CREATE TABLE matches (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   white_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   black_id   UUID REFERENCES users(id) ON DELETE SET NULL,
-  status     VARCHAR(10) NOT NULL CHECK (status IN ('waiting','ongoing','win','draw','lose'))
-             DEFAULT 'waiting',
+  status     match_status NOT NULL DEFAULT 'waiting',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   match_type INTEGER DEFAULT 0,               -- 0: casual, 1: rank
   white_elo_before INTEGER,
@@ -81,12 +83,14 @@ CREATE TABLE match_histories (
 );
 
 /*━━━━━━━━ FRIEND REQUESTS ━*/
+-- Create ENUM type for friend request status
+CREATE TYPE friend_request_status AS ENUM ('pending', 'accepted', 'rejected');
+
 CREATE TABLE friend_requests (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sender_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   receiver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  status      VARCHAR(10) NOT NULL CHECK (status IN ('pending','accepted','rejected'))
-              DEFAULT 'pending',
+  status      friend_request_status NOT NULL DEFAULT 'pending',
   created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -268,7 +272,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_user_upd_time();
 
 -- Insert sample admin user with proper bcrypt hash
 INSERT INTO users (id, username, email, password, "isAdmin", star, coin, full_name) VALUES 
-('11111111-1111-1111-1111-111111111111', 'admin', 'admin@game.com', '$2b$10$N9qo8uLOickgx2ZMRZoMye1MhR4JcO6sZt4H3Z5hWpwh0dntI5dbu', TRUE, 1000, 100, 'Administrator');
+('11111111-1111-1111-1111-111111111111', 'admin', 'admin@game.com', crypt('admin123', gen_salt('bf')), TRUE, 1000, 100, 'Administrator');
 
 -- Insert sample regular user
 INSERT INTO users (id, username, email, password, "isAdmin", star, coin, full_name) VALUES 
