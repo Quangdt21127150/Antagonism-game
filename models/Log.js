@@ -5,7 +5,7 @@ const Log = sequelize.define(
   "Log",
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    admin_id: { type: DataTypes.INTEGER, allowNull: false },
+    admin_id: { type: DataTypes.UUID, allowNull: false },
     action: { type: DataTypes.STRING, allowNull: false }, // create, update, delete, ban, etc.
     target_type: { type: DataTypes.STRING, allowNull: false }, // user, skin, transaction, etc.
     target_id: { type: DataTypes.STRING, allowNull: false }, // ID của đối tượng bị tác động

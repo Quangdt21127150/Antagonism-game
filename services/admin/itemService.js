@@ -28,20 +28,24 @@ class AdminItemService {
         is_active: is_active !== undefined ? is_active : true,
       });
 
-      // Ghi log admin
-      await Log.create({
-        admin_id: adminId,
-        action: "create_item",
-        target_type: "item",
-        target_id: item.id,
-        details: JSON.stringify({
-          name: item.name,
-          type: item.type,
-          price: item.price,
-          price_type: item.price_type,
-          number: item.number,
-        }),
-      });
+      // Ghi log admin (optional - không làm fail nếu table chưa tồn tại)
+      try {
+        await Log.create({
+          admin_id: adminId,
+          action: "create_item",
+          target_type: "item",
+          target_id: item.id,
+          details: JSON.stringify({
+            name: item.name,
+            type: item.type,
+            price: item.price,
+            price_type: item.price_type,
+            number: item.number,
+          }),
+        });
+      } catch (logError) {
+        console.warn("Could not create admin log:", logError.message);
+      }
 
       return item;
     } catch (error) {
