@@ -139,9 +139,9 @@ sequelize
   .then(() => {
     console.log("✅ Database connected");
     server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-    sequelize.sync({ alter: true }).then(() => {
-      console.log("✅ DB synced with alter!");
-    });
+    // sequelize.sync({ alter: true }).then(() => {
+    //   console.log("✅ DB synced with alter!");
+    // });
   })
   .catch((err) => {
     console.error("❌ DB connection error:", err);

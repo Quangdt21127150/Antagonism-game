@@ -5,9 +5,13 @@ const User = require("../models/User");
 const ItemPurchase = require("../models/ItemPurchase");
 const authMiddleware = require("../middleware/authMiddleware");
 const sequelize = require("../config/postgres");
-const upload = require("../middleware/uploadMiddleware");
-const adminAuth = require("../middleware/adminAuth");
 const itemService = require("../services/admin/itemService");
+
+// Middleware to check admin
+function adminMiddleware(req, res, next) {
+  if (req.user && req.user.isAdmin === true) return next();
+  return res.status(403).json({ message: "Admin access required" });
+}
 
 // GET all items
 /**
@@ -99,7 +103,7 @@ router.get("/", authMiddleware, async (req, res) => {
  *                 type: integer
  *               image:
  *                 type: string
- *                 description: URL of the item image
+ *                 description: URL of the item image (uploaded to Cloudinary)
  *             required:
  *               - name
  *               - price
@@ -120,15 +124,11 @@ router.get("/", authMiddleware, async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.post("/", adminAuth, upload.single("image"), async (req, res) => {
+router.post("/", authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const imagePath = req.file?.path;
+    const imageUrl = req.body.image;
 
-    const item = await itemService.createItem(
-      req.body,
-      req.admin.id,
-      imagePath
-    );
+    const item = await itemService.createItem(req.body, req.user.id, imageUrl);
 
     res.status(201).json(item);
   } catch (error) {
@@ -191,15 +191,15 @@ router.post("/", adminAuth, upload.single("image"), async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.put("/:id", adminAuth, upload.single("image"), async (req, res) => {
+router.put("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const itemId = req.params.id;
-    const imagePath = req.file?.path;
+    const imageUrl = req.body.image;
 
     const updatedItem = await itemService.updateItem(
       itemId,
       req.body,
-      imagePath
+      imageUrl
     );
 
     res.status(200).json(updatedItem);
@@ -244,7 +244,7 @@ router.put("/:id", adminAuth, upload.single("image"), async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.delete("/:id", adminAuth, async (req, res) => {
+router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const item_id = req.params.id;
 
