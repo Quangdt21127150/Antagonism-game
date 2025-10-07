@@ -9,40 +9,6 @@ const upload = require("../middleware/uploadMiddleware");
 const adminAuth = require("../middleware/adminAuth");
 const itemService = require("../services/admin/itemService");
 
-// GET all items
-/**
- * @swagger
- * components:
- *   schemas:
- *     Item:
- *       type: object
- *       required:
- *         - id
- *         - name
- *         - price
- *         - number
- *       properties:
- *         id:
- *           type: string
- *           description: The item ID
- *         name:
- *           type: string
- *           description: The item name
- *         price:
- *           type: integer
- *           description: Price of the item in VND
- *         number:
- *           type: integer
- *           description: Quantity of the item
- *         image:
- *           type: string
- *           description: URL of the item image
- *         created_at:
- *           type: string
- *           format: date-time
- *           description: The item creation date
- */
-
 /**
  * @swagger
  * /api/items:
@@ -208,6 +174,78 @@ router.put("/:id", adminAuth, upload.single("image"), async (req, res) => {
   }
 });
 
+// PATCH: Equip or unequip an item
+/**
+ * @swagger
+ * /api/items/{id}/equip:
+ *   patch:
+ *     summary: Equip or unequip an item
+ *     tags: [Items]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID of the item purchase to equip or unequip
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               is_equipped:
+ *                 type: boolean
+ *                 description: Set to true to equip, false to unequip
+ *             required:
+ *               - is_equipped
+ *     responses:
+ *       200:
+ *         description: Item equipped/unequipped successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 item:
+ *                   $ref: '#/components/schemas/Item'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Item purchase not found
+ *       500:
+ *         description: Internal server error
+ */
+router.patch("/:itemId/equip", authMiddleware, async (req, res) => {
+  try {
+    const itemId = req.params.itemId;
+    console.log(itemId);
+    const { is_equipped } = req.body;
+    const userId = req.user.userId;
+
+    const updatedPurchase = await itemService.equipItem(
+      userId,
+      itemId,
+      is_equipped
+    );
+
+    res.status(200).json({
+      message: `Item ${is_equipped ? "equipped" : "unequipped"} successfully`,
+      purchase: updatedPurchase,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 // DELETE an item
 /**
  * @swagger
@@ -314,9 +352,9 @@ router.delete("/:id", adminAuth, async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.post("/:id/purchase", authMiddleware, async (req, res) => {
-  const itemId = req.params.id;
-  const { quantity = 1 } = req.body;
+router.post("/:itemId/purchase", authMiddleware, async (req, res) => {
+  const itemId = req.params.itemId;
+  const { quantity } = req.body;
   const userId = req.user.userId;
 
   try {

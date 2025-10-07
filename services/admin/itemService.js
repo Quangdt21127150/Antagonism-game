@@ -175,6 +175,28 @@ class AdminItemService {
       throw error;
     }
   }
+
+  async equipItem(userId, itemId, isEquipped) {
+    try {
+      const purchase = await ItemPurchase.findOne({
+        where: { item_id: itemId, user_id: userId },
+      });
+
+      if (!purchase) {
+        throw new Error(
+          "Item purchase không tồn tại hoặc không thuộc về user này"
+        );
+      }
+
+      // Cập nhật trạng thái is_equipped
+      purchase.is_equipped = isEquipped;
+      await purchase.save();
+
+      return purchase;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = new AdminItemService();
