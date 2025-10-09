@@ -1,6 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/postgres");
 const Item = require("./Item");
+const User = require("./User");
 
 const ItemPurchase = sequelize.define(
   "ItemPurchase",
@@ -14,7 +15,7 @@ const ItemPurchase = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: "users",
+        model: User,
         key: "id",
       },
     },
@@ -22,7 +23,7 @@ const ItemPurchase = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: "items",
+        model: Item,
         key: "id",
       },
     },
@@ -53,7 +54,5 @@ const ItemPurchase = sequelize.define(
     timestamps: false,
   }
 );
-
-
 
 module.exports = ItemPurchase;

@@ -168,7 +168,7 @@ class AdminItemService {
           {
             model: Item,
             as: "item",
-            attributes: ["id", "name", "price", "image"],
+            attributes: ["id", "name", "price", "image", "type"],
           },
         ],
         order: [["purchased_at", "DESC"]],
@@ -183,7 +183,14 @@ class AdminItemService {
   async equipItem(userId, itemId, isEquipped) {
     try {
       const purchase = await ItemPurchase.findOne({
-        where: { item_id: itemId, user_id: userId },
+        where: { id: itemId, user_id: userId },
+        include: [
+          {
+            model: Item,
+            as: "item",
+            attributes: ["type"],
+          },
+        ],
       });
 
       if (!purchase) {
@@ -196,7 +203,11 @@ class AdminItemService {
       purchase.is_equipped = isEquipped;
       await purchase.save();
 
-      return purchase;
+      // Trả về purchase với thông tin type của item
+      return {
+        ...purchase.toJSON(),
+        type: purchase.item?.type,
+      };
     } catch (error) {
       throw error;
     }

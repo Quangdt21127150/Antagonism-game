@@ -258,7 +258,7 @@ router.put("/:id", authMiddleware, adminMiddleware, async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.patch("/:itemId/equip", authMiddleware, async (req, res) => {
+router.put("/:itemId/equip", authMiddleware, async (req, res) => {
   try {
     const itemId = req.params.itemId;
     console.log(itemId);
