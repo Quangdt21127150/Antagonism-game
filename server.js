@@ -3,6 +3,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
+const slowDown = require("express-slow-down");
 const swaggerJsDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const session = require("express-session");
@@ -28,13 +30,47 @@ const adminReportRoutes = require("./routes/admin/reportRoutes");
 
 const sequelize = require("./config/postgres");
 const path = require("path");
-const http = require("http");
+const https = require("https");
 const { Server } = require("socket.io");
 const gameService = require("./services/gameServices");
 const socketAuthMiddleware = require("./middleware/socketMiddleware");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ========== RATE LIMITING CONFIGURATION ==========
+
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 100,
+  message: {
+    error: "Quá nhiều yêu cầu từ IP này, vui lòng thử lại sau 15 phút",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+
+const paymentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: {
+    error: "Quá nhiều giao dịch thanh toán, vui lòng thử lại sau",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+
+const speedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000,
+  delayAfter: 50,
+  delayMs: 500,
+  maxDelayMs: 5000,
+});
+
+// ==================================================
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, "public")));
@@ -96,21 +132,24 @@ app.use(
   })
 );
 
-// Routes
+
+app.use("/api/", generalLimiter);
+app.use("/api/", speedLimiter);
+
 app.use("/api/users", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/packages", packageRoutes);
-app.use("/api/payment", paymentRoutes); //Route cũ
-app.use("/api/payments", paymentsRoutes); //Route mới
+app.use("/api/payment", paymentLimiter, paymentRoutes); // Payment có rate limit riêng
+app.use("/api/payments", paymentLimiter, paymentsRoutes); // Payment có rate limit riêng
 app.use("/api/codes", codeRoutes);
 app.use("/api/matchmaking", matchmakingRoutes);
 app.use("/api", leaderboardRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/vouchers", voucherRoutes);
 
-// Admin routes
-app.use("/api/admin/auth", adminAuthRoutes);
+// Admin routes - với admin rate limiter
+app.use("/api/admin/auth", authLimiter, adminAuthRoutes); // Admin auth cũng strict
 app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/admin/transactions", adminTransactionRoutes);
 app.use("/api/admin/codes", adminCodeRoutes);
@@ -119,8 +158,8 @@ app.use("/api/admin/reports", adminReportRoutes);
 app.get("/", (req, res) => res.send("Welcome to Antagonism Game Server"));
 app.use((req, res) => res.status(404).json({ message: "Route not found" }));
 
-// HTTP + Socket.IO
-const server = http.createServer(app);
+// HTTPS + Socket.IO
+const server = https.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 io.use(socketAuthMiddleware);
 
