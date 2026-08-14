@@ -97,16 +97,28 @@ router.get("/", authMiddleware, async (req, res) => {
  *             properties:
  *               name:
  *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [skin, pet, title, booster, coin_pack, gem_pack]
  *               price:
  *                 type: integer
+ *               price_type:
+ *                 type: string
+ *                 enum: [coin, gem, real_money]
  *               number:
  *                 type: integer
+ *               discount:
+ *                 type: number
+ *               is_active:
+ *                 type: boolean
  *               image:
  *                 type: string
  *                 description: URL of the item image (uploaded to Cloudinary)
  *             required:
  *               - name
+ *               - type
  *               - price
+ *               - price_type
  *               - number
  *     responses:
  *       201:
@@ -159,20 +171,27 @@ router.post("/", authMiddleware, adminMiddleware, async (req, res) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             description: All fields optional — omitted fields keep their existing value
  *             properties:
  *               name:
  *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [skin, pet, title, booster, coin_pack, gem_pack]
  *               price:
  *                 type: integer
+ *               price_type:
+ *                 type: string
+ *                 enum: [coin, gem, real_money]
  *               number:
  *                 type: integer
+ *               discount:
+ *                 type: number
+ *               is_active:
+ *                 type: boolean
  *               image:
  *                 type: string
  *                 description: URL of the item image
- *             required:
- *               - name
- *               - price
- *               - number
  *     responses:
  *       200:
  *         description: Item updated successfully

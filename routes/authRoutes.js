@@ -53,18 +53,28 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - username
+ *               - phone
+ *               - password
+ *               - confirmPassword
  *             properties:
  *               username:
  *                 type: string
- *               email:
+ *                 description: 4-16 characters
+ *               phone:
  *                 type: string
+ *                 description: Must start with 0 and have exactly 10 digits
  *               password:
+ *                 type: string
+ *                 description: 8-16 characters
+ *               confirmPassword:
  *                 type: string
  *     responses:
  *       201:
  *         description: User registered successfully
  *       400:
- *         description: Username and email are required
+ *         description: Missing or invalid fields
  *       409:
  *         description: User already exist
  */
@@ -95,9 +105,13 @@ router.post("/register", async (req, res) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - username
+ *               - password
  *             properties:
- *               email:
+ *               username:
  *                 type: string
+ *                 description: Có thể là username, email hoặc số điện thoại
  *               password:
  *                 type: string
  *     responses:
@@ -115,7 +129,7 @@ router.post("/register", async (req, res) => {
  *                 refreshToken:
  *                   type: string
  *       400:
- *         description: Invalid email or password
+ *         description: Invalid username or password
  */
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;

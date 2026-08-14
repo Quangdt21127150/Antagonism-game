@@ -47,9 +47,14 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - opponent_id
  *             properties:
  *               opponent_id:
  *                 type: string
+ *               roomType:
+ *                 type: string
+ *                 description: "ranked" or "casual"
  *     responses:
  *       201:
  *         description: Room created successfully

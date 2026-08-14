@@ -66,8 +66,19 @@ const paymentLimiter = rateLimit({
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000,
   delayAfter: 50,
-  delayMs: 500,
+  delayMs: () => 500,
   maxDelayMs: 5000,
+});
+
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: {
+    error: "Quá nhiều yêu cầu đăng nhập, vui lòng thử lại sau 15 phút",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // ==================================================

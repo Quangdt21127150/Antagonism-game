@@ -52,11 +52,16 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - match_id
  *             properties:
  *               match_id:
  *                 type: string
  *               content:
  *                 type: object
+ *               status:
+ *                 type: string
+ *                 enum: [win, lose, draw]
  *     responses:
  *       201:
  *         description: Save match history successfully
